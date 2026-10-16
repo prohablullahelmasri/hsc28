@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>লগইন | Hablullah Educational Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header"><div class="container header-in">
+  <a class="brand" href="index.html"><span class="logo">🎓</span><span>Hablullah<small>Educational Hub</small></span></a>
+  <div style="flex:1"></div>
+  <a class="btn small ghost" href="index.html">← হোম</a>
+</div></header>
+
+<div class="form-box">
+  <div class="tabs" style="margin-top:0">
+    <button id="tabLogin" class="active">লগইন</button>
+    <button id="tabReg">রেজিস্টার</button>
+  </div>
+
+  <h1 id="title">লগইন করুন</h1>
+  <input id="name" placeholder="আপনার নাম" style="display:none" autocomplete="name">
+  <input id="email" type="email" placeholder="ইমেইল" autocomplete="email">
+  <input id="pass" type="password" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)" autocomplete="current-password">
+  <button class="btn" id="go" style="width:100%">লগইন</button>
+  <p style="margin-top:12px;font-size:14px"><a href="#" id="forgot" style="color:var(--accent2)">পাসওয়ার্ড ভুলে গেছেন?</a></p>
+  <div id="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+let mode = 'login';
+const home = location.href.replace(/login\.html.*$/, 'index.html');
+
+function say(t, ok) { $('status').innerHTML = `<div class="msg ${ok ? 'okk' : 'err'}">${t}</div>`; }
+function setMode(m) {
+  mode = m;
+  $('tabLogin').classList.toggle('active', m === 'login');
+  $('tabReg').classList.toggle('active', m === 'reg');
+  $('name').style.display = m === 'reg' ? 'block' : 'none';
+  $('title').textContent = m === 'reg' ? 'নতুন অ্যাকাউন্ট খুলুন' : 'লগইন করুন';
+  $('go').textContent = m === 'reg' ? 'রেজিস্টার করুন' : 'লগইন';
+  $('pass').autocomplete = m === 'reg' ? 'new-password' : 'current-password';
+  $('status').innerHTML = '';
+}
+$('tabLogin').onclick = () => setMode('login');
+$('tabReg').onclick = () => setMode('reg');
+
+function nice(msg) {
+  if (/Invalid login/i.test(msg)) return 'ইমেইল বা পাসওয়ার্ড ভুল।';
+  if (/Email not confirmed/i.test(msg)) return 'আগে ইমেইলে পাঠানো কনফার্মেশন লিংকে চাপ দিন।';
+  if (/already registered/i.test(msg)) return 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে।';
+  if (/rate limit/i.test(msg)) return 'অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন।';
+  return msg;
+}
+
+$('go').onclick = async () => {
+  const email = $('email').value.trim(), pass = $('pass').value;
+  if (!email || !pass) return say('ইমেইল ও পাসওয়ার্ড দিন।');
+  if (mode === 'reg' && pass.length < 6) return say('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।');
+  $('go').disabled = true;
+  if (mode === 'login') {
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    $('go').disabled = false;
+    if (error) return say(nice(error.message));
+    location.href = 'index.html';
+  } else {
+    const { data, error } = await sb.auth.signUp({
+      email, password: pass,
+      options: { data: { full_name: $('name').value.trim() }, emailRedirectTo: home }
+    });
+    $('go').disabled = false;
+    if (error) return say(nice(error.message));
+    if (data.session) { location.href = 'index.html'; return; }
+    say('রেজিস্টার হয়েছে! ইমেইলে একটা কনফার্মেশন লিংক গেছে, সেটাতে চাপ দিন, তারপর লগইন করুন।', true);
+  }
+};
+
+$('forgot').onclick = async e => {
+  e.preventDefault();
+  const email = $('email').value.trim();
+  if (!email) return say('উপরের ঘরে আগে আপনার ইমেইল লিখুন।');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: home });
+  if (error) return say(nice(error.message));
+  say('পাসওয়ার্ড রিসেটের লিংক ইমেইলে পাঠানো হয়েছে।', true);
+};
+
+[ 'email', 'pass' ].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); }));
+sb.auth.getSession().then(({ data }) => { if (data.session) location.href = 'index.html'; });
+</script>
+</body>
+</html>
