@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>এডমিন প্যানেল | Hablullah Educational Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.row .t{min-width:0;word-break:break-word}
+.row small{display:block;color:var(--muted)}
+.cnt{color:var(--muted);font-size:14px;margin:4px 0 10px}
+.sub{margin:6px 0 4px 12px;padding-left:10px;border-left:2px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header class="site-header"><div class="container header-in">
+  <a class="brand" href="index.html"><span class="logo">🎓</span><span>Hablullah<small>এডমিন প্যানেল</small></span></a>
+  <div style="flex:1"></div>
+  <a class="btn small ghost" href="index.html">← সাইটে যান</a>
+  <button class="btn small ghost" id="logout">লগআউট</button>
+</div></header>
+
+<main class="container" id="app" style="display:none">
+  <h1 class="page-title">এডমিন প্যানেল</h1>
+  <p class="cnt">নতুন কিছু যোগ করতে হোম পেজের নিচে ডানদিকের <b>+</b> বাটন ব্যবহার করুন।</p>
+  <div class="tabs" id="tabs"></div>
+  <section class="panel" id="content"></section>
+</main>
+<p class="container empty" id="wait" style="padding:40px 0">যাচাই হচ্ছে...</p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const H = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const D = d => new Date(d).toLocaleDateString('bn-BD');
+
+const TABS = {
+  gov_links: { label: '🏛️ সরকারি লিংক', line: r => `${H(r.title)}<small>${H(r.url)}</small>` },
+  pdfs:      { label: '📄 পিডিএফ',       line: r => `${H(r.title)}<small>${H(r.category || '')} ${H(r.size || '')} • ${H(r.url)}</small>` },
+  books:     { label: '📚 বই ও নোট',     line: r => `${H(r.title)}<small>${H(r.subject || '')} ${H(r.url || '')}</small>` },
+  quizzes:   { label: '📝 কুইজ',         line: r => `${H(r.title)}<small>${H(r.subject || '')}</small>`, quiz: true },
+  updates:   { label: '🆕 আপডেট',        line: r => `${H(r.text)}<small>${D(r.created_at)}</small>` },
+  messages:  { label: '✉️ বার্তা',        line: r => `<b>${H(r.name || 'নামহীন')}</b> ${H(r.email || '')}<small>${D(r.created_at)}</small>${H(r.message)}` },
+  profiles:  { label: '👥 ইউজার',        line: r => `${H(r.full_name || '(নাম নেই)')}<small>${H(r.email || '')} • ${H(r.role)} • ${D(r.created_at)}</small>`, noDel: true }
+};
+let cur = 'gov_links';
+
+function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m;
+  Object.assign(t.style, { position: 'fixed', bottom: '22px', left: '50%', transform: 'translateX(-50%)', background: '#0e2244', border: '1px solid #2b8cff', padding: '10px 20px', borderRadius: '30px', zIndex: 99 });
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
+
+async function load() {
+  const cfg = TABS[cur], box = $('content');
+  box.innerHTML = '<p class="empty">লোড হচ্ছে...</p>';
+  const { data, error } = await sb.from(cur).select('*').order('created_at', { ascending: false });
+  if (error) { box.innerHTML = '<p class="empty">লোড করা যায়নি।</p>'; return; }
+  box.innerHTML = `<h2>${cfg.label}</h2><p class="cnt">মোট ${data.length}টি</p>` +
+    (data.length ? data.map(r => `
+      <div class="row" id="r${cur}${r.id}">
+        <div class="t">${cfg.line(r)}<div class="sub" id="q${r.id}" style="display:none"></div></div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          ${cfg.quiz ? `<button class="btn small ghost" data-q="${r.id}">প্রশ্ন</button>` : ''}
+          ${cfg.noDel ? '' : `<button class="btn small danger" data-del="${r.id}">মুছুন</button>`}
+        </div>
+      </div>`).join('') : '<p class="empty">কিছু নেই।</p>');
+
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('সত্যিই মুছে ফেলবেন? এটা ফেরানো যাবে না।' + (cur === 'quizzes' ? '\n(কুইজের সব প্রশ্নও মুছে যাবে)' : ''))) return;
+    const { error } = await sb.from(cur).delete().eq('id', b.dataset.del);
+    if (error) return toast('মোছা যায়নি');
+    try { sessionStorage.removeItem('c_' + cur); } catch (e) {}
+    toast('মুছে ফেলা হয়েছে'); load();
+  });
+  box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => showQ(b.dataset.q));
+}
+
+async function showQ(id) {
+  const el = $('q' + id);
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block'; el.innerHTML = '<span class="empty">লোড হচ্ছে...</span>';
+  const { data, error } = await sb.from('questions').select('*').eq('quiz_id', id).order('id');
+  if (error) { el.innerHTML = 'লোড করা যায়নি'; return; }
+  el.innerHTML = data.length ? data.map((q, i) => `
+    <div class="row"><div class="t">${i + 1}. ${H(q.question)}<small>সঠিক: ${H((q.correct || '').toUpperCase())}</small></div>
+    <button class="btn small danger" data-dq="${q.id}">মুছুন</button></div>`).join('') : '<span class="empty">এই কুইজে প্রশ্ন নেই।</span>';
+  el.querySelectorAll('[data-dq]').forEach(b => b.onclick = async () => {
+    if (!confirm('প্রশ্নটি মুছবেন?')) return;
+    const { error } = await sb.from('questions').delete().eq('id', b.dataset.dq);
+    if (error) return toast('মোছা যায়নি');
+    toast('মুছে ফেলা হয়েছে'); el.style.display = 'none'; showQ(id);
+  });
+}
+
+function drawTabs() {
+  $('tabs').innerHTML = Object.keys(TABS).map(k => `<button data-t="${k}" class="${k === cur ? 'active' : ''}">${TABS[k].label}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { cur = b.dataset.t; drawTabs(); load(); });
+}
+
+$('logout').onclick = async () => { await sb.auth.signOut(); location.href = 'index.html'; };
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = 'login.html'; return; }
+  const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+  if (!p || p.role !== 'admin') { location.href = 'index.html'; return; }
+  $('wait').style.display = 'none'; $('app').style.display = 'block';
+  drawTabs(); load();
+})();
+</script>
+</body>
+</html>
