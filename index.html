@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hablullah Educational Hub | HSC 2028</title>
+<meta name="description" content="সরকারি লিংক, পিডিএফ, কুইজ, বই ও নোট, এইচএসসি ২৮ ব্যাচ - এক জায়গায়।">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.slider{position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--line);box-shadow:0 0 40px rgba(43,140,255,.25)}
+.slides{display:flex;transition:transform .7s ease}
+.slides img{min-width:100%;height:380px;object-fit:cover;display:block}
+.dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:8px}
+.dots span{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer}
+.dots span.on{background:var(--accent2)}
+</style>
+</head>
+<body>
+
+<header class="site-header"><div class="container header-in">
+  <a class="brand" href="index.html"><span class="logo">🎓</span><span>Hablullah<small>Educational Hub</small></span></a>
+  <nav class="nav">
+    <a class="active" href="#top">হোম</a>
+    <a href="#links">সরকারি লিংক</a>
+    <a href="#pdfs">পিডিএফ</a>
+    <a href="#quiz">কুইজ</a>
+    <a href="#books">বইসমূহ</a>
+    <a href="#batch">এইচএসসি ২৮ ব্যাচ</a>
+    <a href="#tools">টুলস</a>
+    <a href="#contact">যোগাযোগ</a>
+  </nav>
+  <div class="auth-box" id="auth"><a class="btn small" href="login.html">লগইন</a></div>
+</div></header>
+
+<main class="container" id="top">
+
+  <section class="hero">
+    <div>
+      <p class="hero-quote">“শিক্ষা শুধু একটি ডিগ্রি নয়,<br><b>এটি একটি ভালো ভবিষ্যতের চাবিকাঠি।”</b></p>
+      <h1 class="hero-title">Hablullah</h1>
+      <div class="hero-sub">Learn / Grow / Succeed</div>
+      <p class="hero-desc">একটি শিক্ষামূলক ওয়েবসাইট যেখানে পাবেন সরকারি লিংক, পিডিএফ, কুইজ, এমসিকিউ, বই, নোট এবং আরও অনেক কিছু।</p>
+    </div>
+    <div class="slider">
+      <div class="slides" id="slides">
+        <img src="hero.jpg" alt="Hablullah">
+        <img src="hero2.jpg" alt="Hablullah">
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </section>
+
+  <div class="search">
+    <input id="searchInput" placeholder="কোন কিছু খুঁজছেন? (যেমন: SSC, HSC, পিডিএফ, কুইজ, সরকারি লিংক)">
+    <button class="btn" id="searchBtn">খুঁজুন</button>
+  </div>
+
+  <div class="cats">
+    <a class="cat-card" href="#links"><span class="ico">🔗</span>সরকারি ওয়েবসাইট</a>
+    <a class="cat-card" href="#pdfs"><span class="ico">📄</span>পিডিএফ ডাউনলোড</a>
+    <a class="cat-card" href="#quiz"><span class="ico">📝</span>কুইজ (এমসিকিউ)</a>
+    <a class="cat-card" href="#books"><span class="ico">📚</span>বই ও নোট</a>
+    <a class="cat-card" href="#batch"><span class="ico">🎓</span>এইচএসসি ২৮ ব্যাচ</a>
+    <a class="cat-card" href="#updates"><span class="ico">🆕</span>সাম্প্রতিক আপডেট</a>
+    <a class="cat-card" href="#tools"><span class="ico">🛠️</span>উপকারী টুলস</a>
+    <a class="cat-card" href="#contact"><span class="ico">✉️</span>যোগাযোগ</a>
+  </div>
+
+  <div class="grid-3">
+    <section class="panel" id="links"><h2>🏛️ সরকারি শিক্ষামূলক ওয়েবসাইট</h2><ul class="list" id="gov-list"><li class="empty">লোড হচ্ছে...</li></ul></section>
+    <section class="panel" id="pdfs"><h2>📄 পিডিএফ ও গুরুত্বপূর্ণ লিংক</h2><ul class="list" id="pdf-list"><li class="empty">লোড হচ্ছে...</li></ul></section>
+    <section class="panel" id="batch"><h2>🎓 এইচএসসি ২৮ ব্যাচ</h2>
+      <ul class="list">
+        <li><div>নোট ও সাজেশন<small>বিষয়ভিত্তিক নোট</small></div></li>
+        <li><div>বিষয়ভিত্তিক কুইজ<small>MCQ / CQ</small></div></li>
+        <li><div>গত বছরের প্রশ্নপত্র<small>সকল বোর্ড</small></div></li>
+        <li><div>গাইডলাইন ও টিপস<small>পরীক্ষা প্রস্তুতির জন্য</small></div></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid-4">
+    <section class="panel" id="books"><h2>📚 বই ও রিসোর্স</h2><ul class="list" id="books-list"><li class="empty">লোড হচ্ছে...</li></ul></section>
+    <section class="panel" id="quiz"><h2>⚡ দ্রুত অ্যাক্সেস (কুইজ)</h2><ul class="list" id="quiz-list"><li class="empty">লোড হচ্ছে...</li></ul></section>
+    <section class="panel" id="tools"><h2>⚙️ উপকারী টুলস</h2>
+      <ul class="list">
+        <li><a href="https://www.google.com/search?q=calculator" target="_blank" rel="noopener">ক্যালকুলেটর</a></li>
+        <li><a href="http://www.educationboardresults.gov.bd" target="_blank" rel="noopener">অনলাইন রেজাল্ট চেক</a></li>
+        <li><a href="https://www.ilovepdf.com/pdf_to_jpg" target="_blank" rel="noopener">PDF থেকে JPG</a></li>
+        <li><a href="https://www.qr-code-generator.com" target="_blank" rel="noopener">QR কোড জেনারেটর</a></li>
+      </ul>
+    </section>
+    <section class="panel" id="updates"><h2>🆕 সাম্প্রতিক আপডেট</h2><ul class="list" id="updates-list"><li class="empty">লোড হচ্ছে...</li></ul></section>
+  </div>
+
+  <section class="panel" id="quiz-area" style="display:none;margin:14px 0"></section>
+
+  <section class="panel" id="contact" style="margin:14px 0">
+    <h2>✉️ যোগাযোগ</h2>
+    <input id="cName" placeholder="আপনার নাম">
+    <input id="cEmail" type="email" placeholder="ইমেইল">
+    <textarea id="cMsg" placeholder="আপনার বার্তা"></textarea>
+    <button class="btn" id="cSend">পাঠান</button>
+    <div id="cStatus"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="motto">“জ্ঞান হোক সবার অধিকার”</div>
+  <div>Learn | Grow | Succeed</div>
+  <div>© 2026 Hablullah Educational Hub. All rights reserved.</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
