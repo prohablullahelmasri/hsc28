@@ -27,7 +27,14 @@
       { k: 'option_d', l: 'অপশন D' },
       { k: 'correct', l: 'সঠিক উত্তর', type: 'correct', req: 1 } ] },
     updates: { label: '🆕 আপডেট', fields: [
-      { k: 'text', l: 'আপডেটের লেখা', type: 'area', req: 1 } ] }
+           { k: 'text', l: 'আপডেটের লেখা', type: 'area', req: 1 } ] },
+    tools: { label: '⚙️ উপকারী টুলস', fields: [
+      { k: 'title', l: 'টুলের নাম', req: 1 },
+      { k: 'url', l: 'লিংক (https://...)', req: 1, url: 1 } ] },
+    batch_items: { label: '🎓 এইচএসসি ২৮ ব্যাচ', fields: [
+      { k: 'title', l: 'শিরোনাম', req: 1 },
+      { k: 'kind', l: 'ধরন লিখুন: নোট / প্রশ্নপত্র / গাইডলাইন / কমিউনিটি', req: 1 },
+      { k: 'url', l: 'লিংক (https://...)', url: 1 } ] }
   };
 
   async function init() {
