@@ -45,13 +45,14 @@ const TABS = {
   gov_links: { label: '🏛️ সরকারি লিংক', line: r => `${H(r.title)}<small>${H(r.url)}</small>` },
   pdfs:      { label: '📄 পিডিএফ',       line: r => `${H(r.title)}<small>${H(r.category || '')} ${H(r.size || '')} • ${H(r.url)}</small>` },
   books:     { label: '📚 বই ও নোট',     line: r => `${H(r.title)}<small>${H(r.subject || '')} ${H(r.url || '')}</small>` },
+  batch_items: { label: '🎓 এইচএসসি ২৮ ব্যাচ', line: r => `${H(r.title)}<small>${H(r.kind || '')} ${H(r.url || '')}</small>` },
+  tools:     { label: '⚙️ উপকারী টুলস', line: r => `${H(r.title)}<small>${H(r.url)}</small>` },
   quizzes:   { label: '📝 কুইজ',         line: r => `${H(r.title)}<small>${H(r.subject || '')}</small>`, quiz: true },
   updates:   { label: '🆕 আপডেট',        line: r => `${H(r.text)}<small>${D(r.created_at)}</small>` },
   messages:  { label: '✉️ বার্তা',        line: r => `<b>${H(r.name || 'নামহীন')}</b> ${H(r.email || '')}<small>${D(r.created_at)}</small>${H(r.message)}` },
   profiles:  { label: '👥 ইউজার',        line: r => `${H(r.full_name || '(নাম নেই)')}<small>${H(r.email || '')} • ${H(r.role)} • ${D(r.created_at)}</small>`, noDel: true }
 };
 let cur = 'gov_links';
-
 function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m;
   Object.assign(t.style, { position: 'fixed', bottom: '22px', left: '50%', transform: 'translateX(-50%)', background: '#0e2244', border: '1px solid #2b8cff', padding: '10px 20px', borderRadius: '30px', zIndex: 99 });
   document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
