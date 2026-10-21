@@ -100,6 +100,10 @@ async function loadList(table, id, render) {
 }
 
 function loadAll() {
+    loadList('batch_items', 'batch-list', r => {
+    const inner = `<div>${esc(r.title)}<small>${esc(r.kind || '')}</small></div>`;
+    return r.url ? `<li><a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener">${inner}</a></li>` : `<li>${inner}</li>`;
+  });
   loadList('gov_links', 'gov-list', r =>
     `<li><a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener"><div>${esc(r.title)}<small>${esc(r.url)}</small></div></a></li>`);
   loadList('pdfs', 'pdf-list', r =>
