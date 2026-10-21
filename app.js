@@ -104,6 +104,8 @@ function loadAll() {
     const inner = `<div>${esc(r.title)}<small>${esc(r.kind || '')}</small></div>`;
     return r.url ? `<li><a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener">${inner}</a></li>` : `<li>${inner}</li>`;
   });
+    loadList('tools', 'tools-list', r =>
+    `<li><a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener"><div>${esc(r.title)}</div></a></li>`);
   loadList('gov_links', 'gov-list', r =>
     `<li><a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener"><div>${esc(r.title)}<small>${esc(r.url)}</small></div></a></li>`);
   loadList('pdfs', 'pdf-list', r =>
