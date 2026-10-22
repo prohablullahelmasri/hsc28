@@ -58,8 +58,9 @@
     return loading;
   }
 
-  function wordMatches(w, s, text) {
-    if (text.includes(w)) return true;
+    function wordMatches(w, s, text) {
+    const tokens = text.split(/[\s\-–—_.,:;|\/()\[\]{}'"“”‘’•?=&#]+/).filter(Boolean);
+    if (tokens.some(t => t.startsWith(w))) return true;
     if (w.length >= 2 && s.alias.some(a => a.toLowerCase().startsWith(w))) return true;
     return false;
   }
@@ -78,7 +79,7 @@
     SRC.forEach(s => (DATA[s.t] || []).forEach(r => {
       const text = s.hay(r).filter(Boolean).join(' ').toLowerCase();
       if (words.every(w => wordMatches(w, s, text))) {
-        hits.push({ s, r, rank: String(s.title(r) || '').toLowerCase().includes(q) ? 0 : 1 });
+        hits.push({ s, r, rank: String(s.title(r) || '').toLowerCase().startsWith(q) ? 0 : 1 });
       }
     }));
     hits.sort((a, b) => a.rank - b.rank);
