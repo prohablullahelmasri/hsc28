@@ -1,24 +1,130 @@
 (function () {
+  /* ===== ১. নিজে নতুন শব্দ যোগ করার জায়গা =====
+     এক লাইনে একই অর্থের শব্দগুলো রাখুন (বাংলা, ইংরেজি, বাংলিশ)।
+     উদাহরণ: ['কৃষি', 'agriculture', 'krishi'], */
+  const EXTRA = [
+    // এখানে নিচে নতুন লাইন যোগ করুন
+  ];
+
+  const BASE = [
+    ['পদার্থ','পদার্থবিজ্ঞান','physics','phy','podartho','podarthobiggan'],
+    ['রসায়ন','chemistry','chem','rosayon'],
+    ['গণিত','উচ্চতর','math','maths','mathematics','gonit','ganit'],
+    ['জীববিজ্ঞান','জীব','biology','bio','jibbiggan'],
+    ['ইংরেজি','english','ingreji'],
+    ['বাংলা','bangla','bengali'],
+    ['আইসিটি','তথ্য','ict','information'],
+    ['হিসাববিজ্ঞান','হিসাব','accounting','account'],
+    ['অর্থনীতি','economics','orthoniti'],
+    ['ভূগোল','geography','bhugol'],
+    ['ইতিহাস','history','itihas'],
+    ['পৌরনীতি','civics'],
+    ['ব্যবসায়','business','byabosay'],
+    ['বই','বুক','book','books','boi'],
+    ['নোট','note','notes'],
+    ['সাজেশন','suggestion','suggestions'],
+    ['প্রশ্নপত্র','প্রশ্ন','question','questions','proshno'],
+    ['কুইজ','quiz','mcq','এমসিকিউ'],
+    ['পিডিএফ','pdf'],
+    ['সরকারি','government','govt','gov','sorkari','sarkari'],
+    ['লিংক','link','links'],
+    ['ওয়েবসাইট','website','site'],
+    ['টুল','tool','tools'],
+    ['আপডেট','update','updates'],
+    ['ব্যাচ','batch'],
+    ['এইচএসসি','hsc'],
+    ['এসএসসি','ssc'],
+    ['গাইডলাইন','guideline','guidelines','নির্দেশনা'],
+    ['কমিউনিটি','community','গ্রুপ','group'],
+    ['রেজাল্ট','result','ফলাফল','rejalt','folafol'],
+    ['ভর্তি','admission','vorti'],
+    ['পরীক্ষা','exam','examination','porikkha'],
+    ['রুটিন','routine'],
+    ['সিলেবাস','syllabus'],
+    ['বিশ্ববিদ্যালয়','university','ভার্সিটি','varsity'],
+    ['বোর্ড','board'],
+    ['ছবি','image','photo','picture','chobi'],
+    ['ভিডিও','video'],
+    ['স্লাইড','slide','slides'],
+    ['অনুবাদ','translate','translator','translation'],
+    ['অভিধান','dictionary','ডিকশনারি'],
+    ['চাকরি','job','jobs','cakri','chakri'],
+    ['ডাউনলোড','download'],
+    ['অনলাইন','online']
+  ];
+  const SYN = BASE.concat(EXTRA);
+
+  /* ===== ২. কোথায় কী খোঁজা হবে ===== */
   const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const U = u => /^https?:\/\//i.test(u || '') ? u : '';
 
   const SRC = [
-    { t: 'gov_links',   tag: '🏛️ সরকারি লিংক',      alias: ['সরকারি','সরকার','লিংক','link','links','gov','govt','government','website','ওয়েবসাইট'],
+    { t: 'gov_links',   tag: '🏛️ সরকারি লিংক',      alias: ['সরকারি','লিংক','link','links','gov','govt','government','website','ওয়েবসাইট'],
       title: r => r.title, sub: r => r.url, url: r => r.url, hay: r => [r.title, r.url] },
     { t: 'pdfs',        tag: '📄 পিডিএফ',            alias: ['পিডিএফ','pdf','pdfs','ডাউনলোড','download'],
       title: r => r.title, sub: r => [r.category, r.size].filter(Boolean).join(' • '), url: r => r.url, hay: r => [r.title, r.category, r.size] },
-    { t: 'books',       tag: '📚 বই ও নোট',          alias: ['বই','বইসমূহ','বুক','book','books','নোট','note','notes','রিসোর্স','resource','resources'],
+    { t: 'books',       tag: '📚 বই ও নোট',          alias: ['বই','বইসমূহ','বুক','book','books','boi','নোট','note','notes','রিসোর্স','resource','resources'],
       title: r => r.title, sub: r => r.subject, url: r => r.url, hay: r => [r.title, r.subject] },
     { t: 'batch_items', tag: '🎓 এইচএসসি ২৮ ব্যাচ', alias: ['ব্যাচ','batch','এইচএসসি','hsc','প্রশ্নপত্র','গাইডলাইন','কমিউনিটি','group','গ্রুপ'],
       title: r => r.title, sub: r => r.kind, url: r => r.url, hay: r => [r.title, r.kind] },
     { t: 'tools',       tag: '⚙️ টুলস',              alias: ['টুল','টুলস','tool','tools','উপকারী'],
-      title: r => r.title, sub: r => '', url: r => r.url, hay: r => [r.title] },
+      title: r => r.title, sub: r => '', url: r => r.url, hay: r => [r.title, r.url] },
     { t: 'quizzes',     tag: '📝 কুইজ',              alias: ['কুইজ','quiz','quizzes','mcq','এমসিকিউ','প্রশ্ন'],
       title: r => r.title, sub: r => r.subject, quiz: true, hay: r => [r.title, r.subject] },
-    { t: 'updates',     tag: '🆕 আপডেট',             alias: ['আপডেট','update','updates','নতুন','new'],
+    { t: 'updates',     tag: '🆕 আপডেট',             alias: ['আপডেট','update','updates'],
       title: r => r.text, sub: r => '', hay: r => [r.text] }
   ];
 
+  /* ===== ৩. বাংলা → ইংরেজি উচ্চারণ ও ছাঁচ ===== */
+  const BN = {'অ':'o','আ':'a','ই':'i','ঈ':'i','উ':'u','ঊ':'u','ঋ':'ri','এ':'e','ঐ':'oi','ও':'o','ঔ':'ou',
+    'া':'a','ি':'i','ী':'i','ু':'u','ূ':'u','ৃ':'ri','ে':'e','ৈ':'oi','ো':'o','ৌ':'ou',
+    'ক':'k','খ':'kh','গ':'g','ঘ':'gh','ঙ':'ng','চ':'ch','ছ':'ch','জ':'j','ঝ':'jh','ঞ':'n',
+    'ট':'t','ঠ':'th','ড':'d','ঢ':'dh','ণ':'n','ত':'t','থ':'th','দ':'d','ধ':'dh','ন':'n',
+    'প':'p','ফ':'ph','ব':'b','ভ':'bh','ম':'m','য':'j','র':'r','ল':'l','শ':'sh','ষ':'sh','স':'s','হ':'h',
+    'ৎ':'t','ং':'ng','ঃ':'h','ঁ':'','্':'','\u09BC':'',
+    '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+
+  function bn2lat(str) {
+    let s = String(str).normalize('NFC')
+      .replace(/্য/g, '')
+      .replace(/জ্ঞ/g, 'gg')
+      .replace(/য\u09BC/g, 'y').replace(/ড\u09BC/g, 'r').replace(/ঢ\u09BC/g, 'r');
+    let o = '';
+    for (const ch of s) o += (BN[ch] !== undefined ? BN[ch] : ch);
+    return o;
+  }
+
+  function skel(str) {
+    return bn2lat(String(str).toLowerCase())
+      .replace(/sh/g, 's').replace(/ch/g, 'C').replace(/ph/g, 'f').replace(/bh/g, 'b')
+      .replace(/kh/g, 'k').replace(/gh/g, 'g').replace(/th/g, 't').replace(/dh/g, 'd')
+      .replace(/jh/g, 'j').replace(/ng/g, 'n').replace(/x/g, 'ks')
+      .replace(/[cq]/g, 'k').replace(/v/g, 'b').replace(/z/g, 'j')
+      .replace(/[aeiouyhw]/g, '').replace(/[^a-zC0-9]/g, '')
+      .replace(/(.)\1+/g, '$1').replace(/C/g, 'c');
+  }
+
+  const SPLIT = /[\s\-–—_.,:;|\/()\[\]{}'"“”‘’•?=&#।]+/;
+
+  function wordMatches(w, s, text) {
+    const tokens = text.split(SPLIT).filter(Boolean);
+    const sk = tokens.map(skel);
+    const hit = f => {
+      if (tokens.some(t => t.startsWith(f))) return true;
+      const k = skel(f);
+      return k.length >= 2 && sk.some(t => t.startsWith(k));
+    };
+    if (hit(w)) return true;
+    if (w.length < 2) return false;
+    const kw = skel(w);
+    const like = x => { const l = String(x).toLowerCase(); return l.startsWith(w) || (kw.length >= 2 && skel(l).startsWith(kw)); };
+    const groups = SYN.filter(g => g.some(like));
+    if (groups.some(g => g.some(x => hit(String(x).toLowerCase())))) return true;
+    const al = s.alias.map(a => a.toLowerCase());
+    return al.some(like) || groups.some(g => g.some(x => al.includes(String(x).toLowerCase())));
+  }
+
+  /* ===== ৪. ফলাফলের বক্স ===== */
   const css = document.createElement('style');
   css.textContent = `
   #sResults{display:none;background:var(--card);border:1px solid var(--accent);border-radius:14px;margin:-6px 0 16px;padding:6px;max-height:60vh;overflow:auto;box-shadow:0 12px 30px rgba(43,140,255,.25)}
@@ -41,6 +147,7 @@
   panel.id = 'sResults';
   bar.after(panel);
 
+  /* ===== ৫. ডাটাবেস থেকে সব আইটেম আনা (প্রতি মিনিটে নতুন করে) ===== */
   let DATA = null, loadedAt = 0, loading = null;
   async function load() {
     if (DATA && Date.now() - loadedAt < 60000) return;
@@ -58,79 +165,9 @@
     return loading;
   }
 
-  const BN = {'অ':'o','আ':'a','ই':'i','ঈ':'i','উ':'u','ঊ':'u','ঋ':'ri','এ':'e','ঐ':'oi','ও':'o','ঔ':'ou',
-    'া':'a','ি':'i','ী':'i','ু':'u','ূ':'u','ৃ':'ri','ে':'e','ৈ':'oi','ো':'o','ৌ':'ou',
-    'ক':'k','খ':'kh','গ':'g','ঘ':'gh','ঙ':'ng','চ':'ch','ছ':'ch','জ':'j','ঝ':'jh','ঞ':'n',
-    'ট':'t','ঠ':'th','ড':'d','ঢ':'dh','ণ':'n','ত':'t','থ':'th','দ':'d','ধ':'dh','ন':'n',
-    'প':'p','ফ':'ph','ব':'b','ভ':'bh','ম':'m','য':'j','র':'r','ল':'l','শ':'sh','ষ':'sh','স':'s','হ':'h',
-    '\u09DC':'r','\u09DD':'r','\u09DF':'y','ৎ':'t','ং':'ng','ঃ':'h','ঁ':'','্':'','\u09BC':'',
-    '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
-
-  function bn2lat(s) {
-    s = s.replace(/জ্ঞ/g, 'gg').replace(/য\u09BC/g, '\u09DF').replace(/ড\u09BC/g, '\u09DC').replace(/ঢ\u09BC/g, '\u09DD');
-    let o = '';
-    for (const ch of s) o += (BN[ch] !== undefined ? BN[ch] : ch);
-    return o;
-  }
-
-  function skel(s) {
-    return bn2lat(String(s).toLowerCase())
-      .replace(/sh/g, 's').replace(/ch/g, 'C').replace(/ph/g, 'f').replace(/bh/g, 'b')
-      .replace(/kh/g, 'k').replace(/gh/g, 'g').replace(/th/g, 't').replace(/dh/g, 'd')
-      .replace(/jh/g, 'j').replace(/ng/g, 'n').replace(/x/g, 'ks')
-      .replace(/[cq]/g, 'k').replace(/v/g, 'b').replace(/z/g, 'j')
-      .replace(/[aeiouyhw]/g, '').replace(/[^a-zC0-9]/g, '')
-      .replace(/(.)\1+/g, '$1').replace(/C/g, 'c');
-  }
-
-  const SYN = [
-    ['পদার্থ','পদার্থবিজ্ঞান','physics','phy','podartho','fiziks'],
-    ['রসায়ন','chemistry','chem','rosayon','kemistri'],
-    ['গণিত','উচ্চতর','math','maths','mathematics','gonit','ganit'],
-    ['জীববিজ্ঞান','biology','bio','jibbiggan'],
-    ['ইংরেজি','english','ingreji'],
-    ['বাংলা','bangla','bengali'],
-    ['আইসিটি','ict'],
-    ['প্রশ্নপত্র','প্রশ্ন','question','questions','proshno','proshnopotro'],
-    ['নোট','note','notes'],
-    ['সাজেশন','suggestion','suggestions','sajesan'],
-    ['বই','বুক','book','books','boi','bai'],
-    ['কুইজ','quiz','mcq','এমসিকিউ','kuiz'],
-    ['পিডিএফ','pdf'],
-    ['সরকারি','government','govt','gov','sorkari','sarkari'],
-    ['লিংক','link','links'],
-    ['টুল','tool','tools'],
-    ['আপডেট','update','updates'],
-    ['ব্যাচ','batch'],
-    ['গাইডলাইন','guideline','guidelines'],
-    ['কমিউনিটি','community','গ্রুপ','group'],
-    ['ক্যালকুলেটর','calculator'],
-    ['রেজাল্ট','result','ফলাফল','rejalt','folafol'],
-    ['হিসাববিজ্ঞান','accounting'],
-    ['অর্থনীতি','economics','orthoniti'],
-    ['ভূগোল','geography','bhugol'],
-    ['ইতিহাস','history','itihas']
-  ];
-
-  function wordMatches(w, s, text) {
-    const tokens = text.split(/[\s\-–—_.,:;|\/()\[\]{}'"“”‘’•?=&#]+/).filter(Boolean);
-    const sk = tokens.map(skel);
-    const kw = skel(w);
-    const hit = f => {
-      if (tokens.some(t => t.startsWith(f))) return true;
-      const k = skel(f);
-      return k.length >= 2 && sk.some(t => t.startsWith(k));
-    };
-    if (hit(w)) return true;
-    if (w.length < 2) return false;
-    const like = x => { const l = x.toLowerCase(); return l.startsWith(w) || (kw.length >= 2 && skel(l).startsWith(kw)); };
-    const groups = SYN.filter(g => g.some(like));
-    if (groups.some(g => g.some(x => hit(x.toLowerCase())))) return true;
-    return s.alias.some(a => like(a) || groups.some(g => g.some(x => x.toLowerCase() === a.toLowerCase())));
-  }
+  /* ===== ৬. খোঁজা ও দেখানো ===== */
   async function run() {
-    const raw = input.value.trim();
-    const q = raw.toLowerCase();
+    const q = input.value.trim().toLowerCase();
     if (!q) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
     panel.style.display = 'block';
     if (!DATA) panel.innerHTML = '<div class="sr-empty">খোঁজা হচ্ছে...</div>';
@@ -138,18 +175,20 @@
     if (input.value.trim().toLowerCase() !== q) return;
 
     const words = q.split(/\s+/);
+    const kq = skel(q);
     const hits = [];
     SRC.forEach(s => (DATA[s.t] || []).forEach(r => {
       const text = s.hay(r).filter(Boolean).join(' ').toLowerCase();
       if (words.every(w => wordMatches(w, s, text))) {
-        hits.push({ s, r, rank: String(s.title(r) || '').toLowerCase().startsWith(q) ? 0 : 1 });
+        const title = String(s.title(r) || '').toLowerCase();
+        const first = title.startsWith(q) || (kq.length >= 2 && skel(title).startsWith(kq));
+        hits.push({ s, r, rank: first ? 0 : 1 });
       }
     }));
     hits.sort((a, b) => a.rank - b.rank);
 
     if (!hits.length) {
-      panel.innerHTML = '<div class="sr-empty">কিছু পাওয়া যায়নি</div>' +
-        '<div class="sr-foot"><span></span><a id="srClose">✕ বন্ধ</a></div>';
+      panel.innerHTML = '<div class="sr-empty">কিছু পাওয়া যায়নি</div><div class="sr-foot"><span></span><a id="srClose">✕ বন্ধ</a></div>';
     } else {
       panel.innerHTML = hits.slice(0, 30).map(({ s, r }) => {
         const inner = `<span class="sr-tag">${s.tag}</span><b>${E(s.title(r))}</b>${s.sub(r) ? `<small>${E(s.sub(r))}</small>` : ''}`;
