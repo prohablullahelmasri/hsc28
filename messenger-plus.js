@@ -12,7 +12,7 @@
 
   const css = document.createElement('style');
   css.textContent = `
-  #chFab{position:fixed;left:16px;bottom:18px;width:56px;height:56px;border-radius:50%;border:0;font-size:26px;cursor:pointer;z-index:70;color:#fff;background:linear-gradient(135deg,#2b8cff,#12c2ff);box-shadow:0 8px 22px rgba(43,140,255,.55);transition:transform .25s}
+    #chFab{position:fixed;left:16px;bottom:18px;width:60px;height:60px;border-radius:50%;border:2px solid #e0a85f;cursor:pointer;z-index:70;background:#fff3df;box-shadow:0 8px 22px rgba(224,168,95,.55);transition:transform .25s;display:flex;align-items:center;justify-content:center;padding:0}
   #chFab:hover{transform:scale(1.1)}
   #chBadge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#e74c3c;color:#fff;font-size:12px;line-height:20px;padding:0 5px;display:none}
   #chOv{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:110;display:none;align-items:center;justify-content:center}
@@ -61,7 +61,7 @@
 
   const fab = document.createElement('button');
   fab.id = 'chFab';
-  fab.innerHTML = '💬<span id="chBadge"></span>';
+ fab.innerHTML = PEANUT.replace('width="120" height="120"', 'width="40" height="40"') + '<span id="chBadge"></span>';
   fab.setAttribute('aria-label', 'মেসেঞ্জার');
   const ov = document.createElement('div');
   ov.id = 'chOv';
