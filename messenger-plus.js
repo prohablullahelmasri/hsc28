@@ -62,7 +62,7 @@
   const fab = document.createElement('button');
   fab.id = 'chFab';
  fab.innerHTML = PEANUT.replace('width="120" height="120"', 'width="40" height="40"') + '<span id="chBadge"></span>';
-  fab.setAttribute('aria-label', 'মেসেঞ্জার');
+  fab.setAttribute('aria-label', '');
   const ov = document.createElement('div');
   ov.id = 'chOv';
   ov.innerHTML = '<div id="chBox"></div>';
@@ -248,7 +248,7 @@
   }
 
   function loginView() {
-    box.innerHTML = head('💬 মেসেঞ্জার') + `<div class="ch-body" style="text-align:center;padding:40px 20px"><div style="font-size:60px">🥜</div><p>চ্যাট করতে আগে লগইন করুন।</p><br><a class="btn" href="login.html">লগইন / রেজিস্টার</a></div>`;
+    box.innerHTML = head('💬 ') + `<div class="ch-body" style="text-align:center;padding:40px 20px"><div style="font-size:60px">🥜</div><p>চ্যাট করতে আগে লগইন করুন।</p><br><a class="btn" href="login.html">লগইন / রেজিস্টার</a></div>`;
   }
 
   function setupView() {
@@ -262,7 +262,7 @@
 
   function mainView() {
     cur = null; leaveTyping();
-    box.innerHTML = head('💬 মেসেঞ্জার') + '<div class="ch-tabs" id="chTabs"></div><div class="ch-body" id="chBody"></div>' +
+    box.innerHTML = head('💬 ') + '<div class="ch-tabs" id="chTabs"></div><div class="ch-body" id="chBody"></div>' +
       `<div class="ch-foot">🥜 “${QUOTE}” — ${NAME}</div>`;
     renderTab();
   }
