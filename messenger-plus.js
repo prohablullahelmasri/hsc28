@@ -1,81 +1,125 @@
 (function () {
   const NAME = 'Hablullah';
   const QUOTE = 'বন্ধুত্বের আরেক নাম চিনা বাদাম';
+  const BUCKET = 'chat-images';
+  const MAX_SIDE = 1280, QUALITY = 0.78, MAX_INPUT = 15 * 1024 * 1024;
   const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','🙏','👏','🔥','❤️','💔','🎉','🥜','📚','✅','❌','😴','🤝','💪','🌟'];
   const PEANUT = '<svg viewBox="0 0 120 120" width="120" height="120" aria-label="বাদাম"><path d="M60 8C77 8 89 19 89 34C89 44 81 50 77 56C83 62 91 70 91 84C91 101 77 113 60 113C43 113 29 101 29 84C29 70 37 62 43 56C39 50 31 44 31 34C31 19 43 8 60 8Z" fill="#e0a85f" stroke="#a36a2b" stroke-width="3"/><g fill="#b9803d"><circle cx="50" cy="26" r="2.2"/><circle cx="68" cy="30" r="2.2"/><circle cx="58" cy="40" r="2.2"/><circle cx="46" cy="76" r="2.2"/><circle cx="74" cy="72" r="2.2"/><circle cx="62" cy="96" r="2.2"/></g><circle cx="50" cy="82" r="4" fill="#3b2412"/><circle cx="70" cy="82" r="4" fill="#3b2412"/><path d="M52 94Q60 101 68 94" stroke="#3b2412" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
+  const sz = n => PEANUT.replace('width="120" height="120"', `width="${n}" height="${n}"`);
+  const PAL = ['#2b8cff', '#12a8e0', '#8e44ad', '#e67e22', '#16a085', '#e84393', '#d35400', '#27ae60'];
 
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const tm = d => new Date(d).toLocaleTimeString('bn-BD', { hour: 'numeric', minute: '2-digit' });
+  const dayKey = d => { const x = new Date(d); return x.getFullYear() + '-' + x.getMonth() + '-' + x.getDate(); };
+  const dayLabel = d => {
+    const x = new Date(d), t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
+    if (dayKey(x) === dayKey(t)) return 'আজ';
+    if (dayKey(x) === dayKey(y)) return 'গতকাল';
+    return x.toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  const tshort = d => dayKey(d) === dayKey(new Date()) ? tm(d) : new Date(d).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' });
   const note = (m, e) => (typeof toast === 'function' ? toast(m, e) : alert(m));
   const ini = n => esc(String(n || '?').trim().charAt(0).toUpperCase());
+  const colorOf = id => { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PAL[h % PAL.length]; };
+  const av = (n, id, group) => `<div class="ch-av" style="background:${group ? 'linear-gradient(135deg,#8e44ad,#e84393)' : colorOf(id || n)}">${group ? '👥' : ini(n)}</div>`;
 
   const css = document.createElement('style');
   css.textContent = `
-    #chFab{position:fixed;left:16px;bottom:18px;width:60px;height:60px;border-radius:50%;border:2px solid #e0a85f;cursor:pointer;z-index:70;background:#fff3df;box-shadow:0 8px 22px rgba(224,168,95,.55);transition:transform .25s;display:flex;align-items:center;justify-content:center;padding:0}
+  #chFab{position:fixed;left:16px;bottom:18px;width:60px;height:60px;border-radius:50%;border:2px solid #e0a85f;cursor:pointer;z-index:70;background:#fff3df;box-shadow:0 8px 22px rgba(224,168,95,.55);transition:transform .25s;display:flex;align-items:center;justify-content:center;padding:0}
   #chFab:hover{transform:scale(1.1)}
   #chBadge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#e74c3c;color:#fff;font-size:12px;line-height:20px;padding:0 5px;display:none}
   #chOv{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:110;display:none;align-items:center;justify-content:center}
   #chOv.open{display:flex}
-  #chBox{background:var(--bg);border:1px solid var(--line);width:min(460px,100%);height:min(720px,100%);display:flex;flex-direction:column;overflow:hidden;position:relative}
-  @media(min-width:520px){#chBox{border-radius:18px;height:min(720px,92vh)}}
+  #chBox{background:var(--bg);border:1px solid var(--line);width:min(460px,100%);height:min(740px,100%);display:flex;flex-direction:column;overflow:hidden;position:relative;color:var(--text)}
+  @media(min-width:520px){#chBox{border-radius:20px;height:min(740px,92vh);box-shadow:0 24px 70px rgba(0,0,0,.6)}}
   .ch-splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;cursor:pointer;background:radial-gradient(circle at top,#0a2350,#050d1f 70%)}
-  .ch-splash svg{animation:chBob 2.4s ease-in-out infinite}
+  .ch-splash svg{animation:chBob 2.4s ease-in-out infinite;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
   @keyframes chBob{50%{transform:translateY(-8px) rotate(4deg)}}
   .ch-q{font-size:24px;font-weight:600;line-height:1.5;margin-top:14px;background:linear-gradient(90deg,#fff,#12c2ff);-webkit-background-clip:text;background-clip:text;color:transparent}
   .ch-n{margin-top:8px;font-size:13px;color:var(--muted)}
   .ch-hint{margin-top:26px;font-size:12px;color:var(--muted)}
   .ch-x{position:absolute;top:10px;right:12px;background:transparent;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:3px 10px;cursor:pointer;z-index:2}
-  .ch-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--card)}
-  .ch-head h3{flex:1;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ch-head small{display:block;font-size:12px;color:var(--accent2);font-weight:400}
-  .ch-ib{background:transparent;border:0;color:var(--text);font-size:20px;cursor:pointer;padding:2px 6px}
+  .ch-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0e2244,#0b1a33);color:#fff}
+  .ch-head .ttl{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+  .ch-head .tx{min-width:0}
+  .ch-head b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+  .ch-head small{display:block;font-size:12px;color:#7fd3ff;font-weight:400;min-height:15px}
+  .ch-ib{background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer;padding:4px 7px;border-radius:8px}
+  .ch-ib:hover{background:rgba(255,255,255,.1)}
   .ch-tabs{display:flex;border-bottom:1px solid var(--line);background:var(--card)}
-  .ch-tabs button{flex:1;background:transparent;border:0;color:var(--muted);padding:10px 4px;font-family:inherit;font-size:14px;cursor:pointer;border-bottom:2px solid transparent}
-  .ch-tabs button.on{color:var(--accent2);border-bottom-color:var(--accent2)}
+  .ch-tabs button{flex:1;background:transparent;border:0;color:var(--muted);padding:11px 4px;font-family:inherit;font-size:14px;cursor:pointer;border-bottom:3px solid transparent}
+  .ch-tabs button.on{color:var(--accent2);border-bottom-color:var(--accent2);font-weight:600}
   .ch-body{flex:1;overflow:auto;padding:10px}
-  .ch-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;cursor:pointer}
-  .ch-row:hover{background:rgba(43,140,255,.1)}
-  .ch-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#2b8cff,#12c2ff);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .ch-row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;cursor:pointer;transition:background .15s}
+  .ch-row:hover{background:rgba(43,140,255,.12)}
+  .ch-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;color:#fff;font-size:18px}
   .ch-mid{flex:1;min-width:0}
   .ch-mid b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ch-mid small{display:block;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ch-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px;color:var(--muted)}
   .ch-un{background:var(--accent);color:#fff;border-radius:10px;font-size:12px;padding:1px 7px}
-  .ch-sec{color:var(--muted);font-size:13px;margin:12px 4px 4px}
-  .ch-msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
-  .ch-m{max-width:80%;padding:8px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);word-break:break-word;white-space:pre-wrap;align-self:flex-start;cursor:pointer}
-  .ch-m.me{align-self:flex-end;background:linear-gradient(135deg,#1b6fe0,#12a8e0);border-color:transparent}
-  .ch-m .by{display:block;font-size:12px;color:var(--accent2)}
+  .ch-sec{color:var(--muted);font-size:13px;margin:14px 4px 4px}
+  .ch-msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:5px;background:radial-gradient(circle at 20% 0,#0b2150,transparent 55%),var(--bg)}
+  .ch-day{align-self:center;margin:8px 0}
+  .ch-day span{background:rgba(255,255,255,.1);color:var(--muted);font-size:12px;padding:3px 12px;border-radius:12px}
+  .ch-m{max-width:80%;padding:7px 11px;border-radius:16px 16px 16px 4px;background:var(--card2);border:1px solid var(--line);word-break:break-word;white-space:pre-wrap;align-self:flex-start;cursor:pointer;line-height:1.45}
+  .ch-m.me{align-self:flex-end;border-radius:16px 16px 4px 16px;background:linear-gradient(135deg,#1b6fe0,#12a8e0);border-color:transparent;color:#fff}
+  .ch-m .by{display:block;font-size:12px;font-weight:600;color:var(--accent2)}
   .ch-m .t{display:block;font-size:11px;opacity:.7;text-align:right;margin-top:2px}
   .ch-m.del{opacity:.6;font-style:italic}
-  .ch-in{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--card);align-items:flex-end}
-  .ch-in textarea{flex:1;margin:0;min-height:42px;max-height:110px;resize:none;border-radius:20px;padding:10px 14px}
+  .ch-img{display:block;width:240px;max-width:100%;max-height:320px;min-height:120px;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.08);margin-bottom:4px;cursor:zoom-in}
+  .ch-prev{display:none;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);background:var(--card)}
+  .ch-prev img{width:56px;height:56px;object-fit:cover;border-radius:10px}
+  .ch-prev span{flex:1;color:var(--muted);font-size:13px}
+  .ch-in{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--line);background:var(--card);align-items:flex-end}
+  .ch-in textarea{flex:1;margin:0;min-height:42px;max-height:110px;resize:none;border-radius:22px;padding:10px 14px}
+  .ch-in .ch-ib{height:42px;font-size:22px}
+  .ch-send{width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#2b8cff,#12c2ff);color:#fff;font-size:18px;cursor:pointer;flex-shrink:0}
+  .ch-send:disabled{opacity:.5}
   .ch-emo{display:none;flex-wrap:wrap;gap:4px;padding:8px 10px;background:var(--card);border-top:1px solid var(--line)}
   .ch-emo span{font-size:22px;cursor:pointer;padding:2px 4px}
   .ch-foot{padding:8px;text-align:center;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
-  .ch-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0}
+  .ch-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
   .ch-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
   .ch-note{color:var(--muted);font-size:13px;margin:6px 0}
+  .ch-empty{text-align:center;color:var(--muted);padding:30px 14px}
+  .ch-sheet{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;z-index:5}
+  .ch-sheet-in{width:100%;background:var(--card);border-radius:18px 18px 0 0;padding:10px 12px 14px;border-top:1px solid var(--line)}
+  .ch-sheet-t{color:var(--muted);font-size:13px;text-align:center;padding:6px}
+  .ch-sheet-b{display:block;width:100%;background:transparent;border:0;border-top:1px solid var(--line);color:var(--text);font-family:inherit;font-size:16px;padding:14px;cursor:pointer}
+  .ch-sheet-b.dg{color:#ff6b6b}
+  #chLb{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:130;display:none;align-items:center;justify-content:center;padding:12px}
+  #chLb.open{display:flex}
+  #chLb img{max-width:100%;max-height:100%;border-radius:8px}
+  #chLb button{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.15);border:0;color:#fff;font-size:22px;border-radius:10px;padding:4px 12px;cursor:pointer}
   `;
   document.head.appendChild(css);
 
   const fab = document.createElement('button');
   fab.id = 'chFab';
- fab.innerHTML = PEANUT.replace('width="120" height="120"', 'width="40" height="40"') + '<span id="chBadge"></span>';
-  fab.setAttribute('aria-label', '');
+  fab.innerHTML = sz(40) + '<span id="chBadge"></span>';
+  fab.setAttribute('aria-label', 'চিনা বাদাম');
   const ov = document.createElement('div');
   ov.id = 'chOv';
   ov.innerHTML = '<div id="chBox"></div>';
-  document.body.append(fab, ov);
+  const lb = document.createElement('div');
+  lb.id = 'chLb';
+  lb.innerHTML = '<button>✕</button><img alt="ছবি">';
+  document.body.append(fab, ov, lb);
   const box = ov.firstChild;
+  lb.onclick = () => lb.classList.remove('open');
 
   let uid = null, me = null, isAdmin = false;
-  let tab = 'chats', convs = [], cur = null, curMsgs = [];
+  let tab = 'chats', convs = [], cur = null, curMsgs = [], filterQ = '';
   let fr = { rows: [], users: {} };
   let typingCh = null, typingTimer = null, lastTyp = 0, globalCh = null, seenSplash = false;
+  let pending = null, sending = false;
+  const urlCache = {};
 
   const isOpen = () => ov.classList.contains('open');
-  const head = (t, back) => `<div class="ch-head">${back ? `<button class="ch-ib" data-act="${back}">←</button>` : ''}<h3>${t}</h3><button class="ch-ib" data-act="close">✕</button></div>`;
+  const head = (inner, back) => `<div class="ch-head">${back ? `<button class="ch-ib" data-act="${back}">←</button>` : ''}<div class="ttl">${inner}</div><button class="ch-ib" data-act="close">✕</button></div>`;
+  const brand = sub => `${sz(34)}<div class="tx"><b>চিনা বাদাম</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div>`;
   const otherUser = cv => (cv.members.find(x => x.user_id !== uid) || {}).chat_users;
   const cname = cv => cv.kind === 'group' ? (cv.title || 'গ্রুপ') : ((otherUser(cv) || {}).display_name || 'ব্যবহারকারী');
   const otherId = r => r.requester === uid ? r.addressee : r.requester;
@@ -112,6 +156,62 @@
     return { data };
   }
 
+  /* ===== ছবি ===== */
+  async function ensureUrls(paths) {
+    const now = Date.now();
+    const need = [...new Set(paths)].filter(p => !urlCache[p] || urlCache[p].exp < now + 60000);
+    if (!need.length) return;
+    const { data } = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
+    (data || []).forEach(r => { if (r.signedUrl) urlCache[r.path] = { url: r.signedUrl, exp: now + 3600 * 1000 }; });
+  }
+  function fillImgs(root) {
+    const imgs = [...root.querySelectorAll('img[data-p]')];
+    if (!imgs.length) return;
+    const apply = () => imgs.forEach(i => {
+      const c = urlCache[i.dataset.p];
+      if (c && i.getAttribute('src') !== c.url) i.src = c.url;
+    });
+    apply();
+    ensureUrls(imgs.map(i => i.dataset.p)).then(apply).catch(() => {});
+  }
+  function compress(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        const s = Math.min(1, MAX_SIDE / Math.max(w, h));
+        w = Math.round(w * s); h = Math.round(h * s);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const x = c.getContext('2d');
+        x.fillStyle = '#fff'; x.fillRect(0, 0, w, h);
+        x.drawImage(img, 0, 0, w, h);
+        c.toBlob(b => { URL.revokeObjectURL(url); b ? res(b) : rej(new Error('blob')); }, 'image/jpeg', QUALITY);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+      img.src = url;
+    });
+  }
+  function clearPending() {
+    if (pending) URL.revokeObjectURL(pending.url);
+    pending = null;
+    const p = $('#chPrev');
+    if (p) p.style.display = 'none';
+  }
+  async function setPending(file) {
+    if (!file || !file.type.startsWith('image/')) { note('শুধু ছবি পাঠানো যাবে', true); return; }
+    if (file.size > MAX_INPUT) { note('ছবিটি অনেক বড় (১৫ MB-এর কম হতে হবে)', true); return; }
+    try {
+      const blob = await compress(file);
+      clearPending();
+      pending = { blob, url: URL.createObjectURL(blob) };
+      const p = $('#chPrev');
+      if (p) { p.querySelector('img').src = pending.url; p.style.display = 'flex'; }
+    } catch (e) { note('এই ছবি পড়া যায়নি', true); }
+  }
+
+  /* ===== ডাটা লোড ===== */
   async function loadConvs() {
     const { data: mine } = await sb.from('conversation_members').select('conversation_id,last_read_at').eq('user_id', uid);
     const ids = (mine || []).map(r => r.conversation_id);
@@ -221,14 +321,27 @@
         if (!t) return;
         t.textContent = (payload.name || 'কেউ') + ' লিখছে...';
         clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => { const x = $('#chTyp'); if (x) x.textContent = ''; }, 3000);
+        typingTimer = setTimeout(() => { const x = $('#chTyp'); if (x) x.textContent = x.dataset.d || ''; }, 3000);
       }).subscribe();
   }
   function leaveTyping() {
     if (typingCh) { sb.removeChannel(typingCh); typingCh = null; }
     clearTimeout(typingTimer);
   }
-  function closeAll() { ov.classList.remove('open'); leaveTyping(); cur = null; }
+  function closeAll() { ov.classList.remove('open'); leaveTyping(); clearPending(); cur = null; }
+
+  /* ===== মেনু (নিচ থেকে ওঠে) ===== */
+  function sheet(title, items) {
+    const s = document.createElement('div');
+    s.className = 'ch-sheet';
+    s.innerHTML = `<div class="ch-sheet-in">${title ? `<div class="ch-sheet-t">${esc(title)}</div>` : ''}${items.map((it, i) => `<button class="ch-sheet-b ${it.danger ? 'dg' : ''}" data-i="${i}">${it.label}</button>`).join('')}<button class="ch-sheet-b" data-i="x">বাতিল</button></div>`;
+    box.appendChild(s);
+    s.onclick = e => {
+      const b = e.target.closest('[data-i]');
+      if (e.target === s || (b && b.dataset.i === 'x')) { s.remove(); return; }
+      if (b) { s.remove(); items[+b.dataset.i].fn(); }
+    };
+  }
 
   /* ===== পর্দা ===== */
   function splash() {
@@ -248,21 +361,21 @@
   }
 
   function loginView() {
-    box.innerHTML = head('💬 ') + `<div class="ch-body" style="text-align:center;padding:40px 20px"><div style="font-size:60px">🥜</div><p>চ্যাট করতে আগে লগইন করুন।</p><br><a class="btn" href="login.html">লগইন / রেজিস্টার</a></div>`;
+    box.innerHTML = head(brand('')) + `<div class="ch-body ch-empty" style="padding-top:50px">${sz(90)}<p style="margin:14px 0">চ্যাট করতে আগে লগইন করুন।</p><a class="btn" href="login.html">লগইন / রেজিস্টার</a></div>`;
   }
 
   function setupView() {
-    box.innerHTML = head('প্রোফাইল তৈরি') + `<div class="ch-body">
+    box.innerHTML = head(brand('প্রোফাইল তৈরি')) + `<div class="ch-body">
       <p class="ch-note">অন্যরা আপনাকে এই ইউজারনেম ও নাম দিয়ে খুঁজবে। আপনার ইমেইল কেউ দেখবে না।</p>
-      <p class="ch-note">মনে রাখবেন: বার্তা সার্ভারে সংরক্ষিত থাকে। কেউ রিপোর্ট করলে সেই বার্তা এডমিন দেখতে পারেন।</p>
+      <p class="ch-note">মনে রাখবেন: বার্তা ও ছবি সার্ভারে সংরক্ষিত থাকে। কেউ রিপোর্ট করলে সেই বার্তা বা ছবি এডমিন দেখতে পারেন।</p>
       <input id="chUn" placeholder="ইউজারনেম (a-z, 0-9, _ ; ৩-২০ অক্ষর)" autocapitalize="none" autocomplete="off">
       <input id="chDn" placeholder="আপনার নাম" maxlength="40">
       <button class="btn" data-act="saveu" style="width:100%">সংরক্ষণ করুন</button><div id="chErr"></div></div>`;
   }
 
   function mainView() {
-    cur = null; leaveTyping();
-    box.innerHTML = head('💬 ') + '<div class="ch-tabs" id="chTabs"></div><div class="ch-body" id="chBody"></div>' +
+    cur = null; leaveTyping(); clearPending();
+    box.innerHTML = head(brand('@' + me.username)) + '<div class="ch-tabs" id="chTabs"></div><div class="ch-body" id="chBody"></div>' +
       `<div class="ch-foot">🥜 “${QUOTE}” — ${NAME}</div>`;
     renderTab();
   }
@@ -270,21 +383,30 @@
   function renderTab() {
     const b = $('#chBody');
     if (!b) return;
-    const tabs = [['chats', 'চ্যাট'], ['friends', 'বন্ধু' + (reqCount() ? ' (' + reqCount() + ')' : '')]];
-    if (isAdmin) tabs.push(['reports', 'রিপোর্ট']);
+    const tabs = [['chats', '💬 চ্যাট'], ['friends', '👥 বন্ধু' + (reqCount() ? ' (' + reqCount() + ')' : '')]];
+    if (isAdmin) tabs.push(['reports', '🚩 রিপোর্ট']);
     $('#chTabs').innerHTML = tabs.map(t => `<button data-act="tab" data-t="${t[0]}" class="${t[0] === tab ? 'on' : ''}">${t[1]}</button>`).join('');
-    if (tab === 'chats') b.innerHTML = chatsHtml();
-    else if (tab === 'friends') b.innerHTML = friendsHtml();
+    if (tab === 'chats') {
+      b.innerHTML = '<button class="btn" data-act="newgroup" style="width:100%;margin-bottom:8px">➕ নতুন গ্রুপ</button><input id="chFilter" placeholder="চ্যাট খুঁজুন..." autocomplete="off" style="margin-top:0"><div id="chList"></div>';
+      $('#chFilter').value = filterQ;
+      drawList();
+    } else if (tab === 'friends') b.innerHTML = friendsHtml();
     else reportsLoad(b);
   }
 
-  function chatsHtml() {
-    let h = '<button class="btn" data-act="newgroup" style="width:100%;margin-bottom:8px">➕ নতুন গ্রুপ</button>';
-    if (!convs.length) return h + '<p class="ch-note">এখনো কোনো চ্যাট নেই। "বন্ধু" ট্যাব থেকে বন্ধু যোগ করে চ্যাট শুরু করুন।</p>';
-    return h + convs.map(cv => {
-      const n = cname(cv);
-      const prev = cv.last ? (cv.last.deleted ? 'মুছে ফেলা হয়েছে' : cv.last.body) : 'নতুন চ্যাট';
-      return `<div class="ch-row" data-act="open" data-id="${cv.id}"><div class="ch-av">${ini(n)}</div><div class="ch-mid"><b>${cv.kind === 'group' ? '👥 ' : ''}${esc(n)}</b><small>${esc(prev)}</small></div>${cv.unread ? `<span class="ch-un">${cv.unread}</span>` : ''}</div>`;
+  function drawList() {
+    const el = $('#chList');
+    if (!el) return;
+    const q = filterQ.trim().toLowerCase();
+    const list = convs.filter(cv => !q || cname(cv).toLowerCase().includes(q));
+    if (!convs.length) { el.innerHTML = `<div class="ch-empty">${sz(70)}<p style="margin-top:10px">এখনো কোনো চ্যাট নেই।<br>"বন্ধু" ট্যাব থেকে বন্ধু যোগ করে চ্যাট শুরু করুন।</p></div>`; return; }
+    if (!list.length) { el.innerHTML = '<p class="ch-note">কিছু পাওয়া যায়নি।</p>'; return; }
+    el.innerHTML = list.map(cv => {
+      const n = cname(cv), g = cv.kind === 'group';
+      const oid = g ? cv.id : ((otherUser(cv) || {}).id || n);
+      let prev = 'নতুন চ্যাট';
+      if (cv.last) prev = cv.last.deleted ? 'মুছে ফেলা হয়েছে' : ((cv.last.image_path ? '📷 ছবি ' : '') + (cv.last.body || ''));
+      return `<div class="ch-row" data-act="open" data-id="${cv.id}">${av(n, oid, g)}<div class="ch-mid"><b>${esc(n)}</b><small>${esc(prev)}</small></div><div class="ch-meta">${cv.last ? `<span>${tshort(cv.last.created_at)}</span>` : ''}${cv.unread ? `<span class="ch-un">${cv.unread}</span>` : ''}</div></div>`;
     }).join('');
   }
 
@@ -293,31 +415,14 @@
     const out = fr.rows.filter(r => r.status === 'pending' && r.requester === uid);
     const fl = fr.rows.filter(r => r.status === 'accepted');
     const bl = fr.rows.filter(r => r.status === 'blocked' && r.blocked_by === uid);
+    const row = (id, extra) => { const u = U(id); return `<div class="ch-row">${av(u.display_name, id)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${extra}</div>`; };
     let h = `<div class="ch-card"><b>বন্ধু খুঁজুন</b><input id="chQ" placeholder="ইউজারনেম বা নাম" autocomplete="off" autocapitalize="none"><div class="ch-btns"><button class="btn small" data-act="search">খুঁজুন</button></div><div id="chRes"></div></div>`;
     h += `<div class="ch-note">আপনার ইউজারনেম: <b>@${esc(me.username)}</b></div>`;
-    if (inc.length) {
-      h += '<div class="ch-sec">বন্ধুত্বের অনুরোধ</div>' + inc.map(r => {
-        const u = U(r.requester);
-        return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div><button class="btn small" data-act="acc" data-id="${r.id}">গ্রহণ</button><button class="btn small ghost" data-act="dec" data-id="${r.id}">বাতিল</button></div>`;
-      }).join('');
-    }
-    if (out.length) {
-      h += '<div class="ch-sec">পাঠানো অনুরোধ</div>' + out.map(r => {
-        const u = U(r.addressee);
-        return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div><button class="btn small ghost" data-act="unfriend" data-uid="${r.addressee}">বাতিল</button></div>`;
-      }).join('');
-    }
+    if (inc.length) h += '<div class="ch-sec">বন্ধুত্বের অনুরোধ</div>' + inc.map(r => row(r.requester, `<button class="btn small" data-act="acc" data-id="${r.id}">গ্রহণ</button><button class="btn small ghost" data-act="dec" data-id="${r.id}">বাতিল</button>`)).join('');
+    if (out.length) h += '<div class="ch-sec">পাঠানো অনুরোধ</div>' + out.map(r => row(r.addressee, `<button class="btn small ghost" data-act="unfriend" data-uid="${r.addressee}">বাতিল</button>`)).join('');
     h += `<div class="ch-sec">বন্ধু (${fl.length})</div>`;
-    h += fl.length ? fl.map(r => {
-      const id = otherId(r), u = U(id);
-      return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid" data-act="dm" data-uid="${id}"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div><button class="btn small" data-act="dm" data-uid="${id}">মেসেজ</button><button class="ch-ib" data-act="fmenu" data-uid="${id}">⋯</button></div>`;
-    }).join('') : '<p class="ch-note">এখনো কোনো বন্ধু নেই।</p>';
-    if (bl.length) {
-      h += '<div class="ch-sec">ব্লক করা</div>' + bl.map(r => {
-        const id = otherId(r), u = U(id);
-        return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div><button class="btn small ghost" data-act="unblock" data-uid="${id}">আনব্লক</button></div>`;
-      }).join('');
-    }
+    h += fl.length ? fl.map(r => { const id = otherId(r); return row(id, `<button class="btn small" data-act="dm" data-uid="${id}">মেসেজ</button><button class="ch-ib" data-act="fmenu" data-uid="${id}">⋯</button>`); }).join('') : '<p class="ch-note">এখনো কোনো বন্ধু নেই।</p>';
+    if (bl.length) h += '<div class="ch-sec">ব্লক করা</div>' + bl.map(r => { const id = otherId(r); return row(id, `<button class="btn small ghost" data-act="unblock" data-uid="${id}">আনব্লক</button>`); }).join('');
     return h;
   }
 
@@ -325,7 +430,8 @@
     b.innerHTML = '<p class="ch-note">লোড হচ্ছে...</p>';
     const { data, error } = await sb.from('chat_reports').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { b.innerHTML = '<p class="ch-note">লোড করা যায়নি।</p>'; return; }
-    b.innerHTML = data.length ? data.map(r => `<div class="ch-card"><b>${esc(r.reported_name || '')}</b> <small>— রিপোর্ট করেছেন ${esc(r.reporter_name || '')}</small>${r.message_text ? `<div class="ch-note">“${esc(r.message_text)}”</div>` : ''}<div class="ch-note">কারণ: ${esc(r.reason || '—')}</div><div class="ch-btns"><button class="btn small danger" data-act="delrep" data-id="${r.id}">রিপোর্ট মুছুন</button></div></div>`).join('') : '<p class="ch-note">কোনো রিপোর্ট নেই।</p>';
+    b.innerHTML = data.length ? data.map(r => `<div class="ch-card"><b>${esc(r.reported_name || '')}</b> <small>— রিপোর্ট করেছেন ${esc(r.reporter_name || '')}</small>${r.image_path ? `<img class="ch-img" data-p="${esc(r.image_path)}" data-act="zoom" alt="ছবি" style="margin-top:8px">` : ''}${r.message_text ? `<div class="ch-note">“${esc(r.message_text)}”</div>` : ''}<div class="ch-note">কারণ: ${esc(r.reason || '—')}</div><div class="ch-btns"><button class="btn small danger" data-act="delrep" data-id="${r.id}">রিপোর্ট মুছুন</button></div></div>`).join('') : '<p class="ch-note">কোনো রিপোর্ট নেই।</p>';
+    fillImgs(b);
   }
 
   async function doSearch() {
@@ -342,7 +448,7 @@
       if (!r) b = `<button class="btn small" data-act="req" data-uid="${u.id}">যোগ করুন</button>`;
       else if (r.status === 'accepted') b = `<button class="btn small" data-act="dm" data-uid="${u.id}">মেসেজ</button>`;
       else if (r.status === 'pending') b = r.requester === uid ? '<span class="ch-note">অনুরোধ পাঠানো হয়েছে</span>' : `<button class="btn small" data-act="acc" data-id="${r.id}">গ্রহণ</button>`;
-      return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${b}</div>`;
+      return `<div class="ch-row">${av(u.display_name, u.id)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${b}</div>`;
     }).join('');
   }
 
@@ -353,6 +459,7 @@
     if (!cur) return;
     const { data } = await sb.from('chat_messages').select('*').eq('conversation_id', cid).order('created_at', { ascending: false }).limit(100);
     curMsgs = (data || []).reverse();
+    clearPending();
     chatView();
     markRead(cid);
     joinTyping(cid);
@@ -361,21 +468,38 @@
   function chatView() {
     const g = cur.kind === 'group';
     const peer = g ? null : otherUser(cur);
-    box.innerHTML = `<div class="ch-head"><button class="ch-ib" data-act="back">←</button><h3>${g ? '👥 ' : ''}${esc(cname(cur))}<small id="chTyp"></small></h3>${g ? '<button class="ch-ib" data-act="ginfo">ⓘ</button>' : (peer ? `<button class="ch-ib" data-act="fmenu" data-uid="${peer.id}">⋯</button>` : '')}<button class="ch-ib" data-act="close">✕</button></div>
+    const n = cname(cur);
+    const sub = g ? cur.members.length + ' জন সদস্য' : (peer ? '@' + peer.username : '');
+    box.innerHTML = `<div class="ch-head"><button class="ch-ib" data-act="back">←</button><div class="ttl">${av(n, g ? cur.id : (peer && peer.id), g)}<div class="tx"><b>${esc(n)}</b><small id="chTyp" data-d="${esc(sub)}">${esc(sub)}</small></div></div>${g ? '<button class="ch-ib" data-act="ginfo">ⓘ</button>' : (peer ? `<button class="ch-ib" data-act="fmenu" data-uid="${peer.id}">⋯</button>` : '')}<button class="ch-ib" data-act="close">✕</button></div>
       <div class="ch-msgs" id="chMsgs"></div>
+      <div class="ch-prev" id="chPrev"><img alt="প্রিভিউ"><span>ছবি পাঠানোর জন্য তৈরি। চাইলে নিচে ক্যাপশন লিখুন।</span><button class="ch-ib" data-act="unpick">✕</button></div>
       <div class="ch-emo" id="chEmo">${EMOJIS.map(e => `<span data-act="emo" data-e="${e}">${e}</span>`).join('')}</div>
-      <div class="ch-in"><button class="ch-ib" data-act="emotog">😊</button><textarea id="chTxt" rows="1" maxlength="1000" placeholder="বার্তা লিখুন..."></textarea><button class="btn" data-act="send">➤</button></div>`;
+      <div class="ch-in"><input type="file" id="chFile" accept="image/*" hidden><button class="ch-ib" data-act="emotog">😊</button><button class="ch-ib" data-act="pick" aria-label="ছবি">📷</button><textarea id="chTxt" rows="1" maxlength="1000" placeholder="বার্তা লিখুন..."></textarea><button class="ch-send" data-act="send">➤</button></div>`;
+    const el = $('#chMsgs');
+    el.addEventListener('load', ev => {
+      if (ev.target.tagName === 'IMG' && el.dataset.stick === '1') el.scrollTop = el.scrollHeight;
+    }, true);
     drawMsgs();
+  }
+
+  function scrollBottom() {
+    const el = $('#chMsgs');
+    if (el) { el.dataset.stick = '1'; el.scrollTop = el.scrollHeight; }
   }
 
   function drawMsgs() {
     const el = $('#chMsgs');
     if (!el || !cur) return;
-    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 120 || !el.dataset.init;
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 140 || !el.dataset.init;
     el.dataset.init = '1';
+    el.dataset.stick = near ? '1' : '0';
     const g = cur.kind === 'group';
     const peer = g ? null : cur.members.find(x => x.user_id !== uid);
+    let lastDay = '';
     el.innerHTML = curMsgs.map(m => {
+      let h = '';
+      const dk = dayKey(m.created_at);
+      if (dk !== lastDay) { lastDay = dk; h += `<div class="ch-day"><span>${esc(dayLabel(m.created_at))}</span></div>`; }
       const mine = m.sender_id === uid;
       let by = '';
       if (g && !mine) {
@@ -384,31 +508,62 @@
       }
       const seen = mine && peer && new Date(peer.last_read_at) >= new Date(m.created_at);
       const tick = mine && !m.deleted && !g ? (seen ? ' ✓✓' : ' ✓') : '';
-      return `<div class="ch-m ${mine ? 'me' : ''} ${m.deleted ? 'del' : ''}" data-act="mact" data-id="${m.id}">${by ? `<span class="by">${esc(by)}</span>` : ''}${esc(m.deleted ? 'মুছে ফেলা হয়েছে' : m.body)}<span class="t">${tm(m.created_at)}${tick}</span></div>`;
+      const content = m.deleted
+        ? esc('মুছে ফেলা হয়েছে')
+        : (m.image_path ? `<img class="ch-img" data-p="${esc(m.image_path)}" data-act="zoom" alt="ছবি">` : '') + (m.body ? `<span class="tx">${esc(m.body)}</span>` : '');
+      h += `<div class="ch-m ${mine ? 'me' : ''} ${m.deleted ? 'del' : ''}" data-act="mact" data-id="${m.id}">${by ? `<span class="by">${esc(by)}</span>` : ''}${content}<span class="t">${tm(m.created_at)}${tick}</span></div>`;
+      return h;
     }).join('');
+    fillImgs(el);
     if (near) el.scrollTop = el.scrollHeight;
   }
 
   async function send() {
+    if (sending || !cur) return;
     const t = $('#chTxt');
-    if (!t || !cur) return;
     const body = t.value.trim();
-    if (!body) return;
-    t.value = '';
-    const { data, error } = await sb.from('chat_messages').insert({ conversation_id: cur.id, sender_id: uid, body }).select().single();
-    if (error) { t.value = body; note(/too_fast/.test(error.message) ? 'একটু ধীরে পাঠান' : 'পাঠানো যায়নি', true); return; }
-    if (!curMsgs.some(x => x.id === data.id)) curMsgs.push(data);
-    cur.last = data; sortConvs(); drawMsgs();
-    const el = $('#chMsgs'); if (el) el.scrollTop = el.scrollHeight;
+    if (!body && !pending) return;
+    sending = true;
+    const btn = $('.ch-send');
+    if (btn) btn.disabled = true;
+    try {
+      let path = null;
+      if (pending) {
+        path = `${cur.id}/${uid}/${crypto.randomUUID()}.jpg`;
+        const { error: ue } = await sb.storage.from(BUCKET).upload(path, pending.blob, { contentType: 'image/jpeg', upsert: false });
+        if (ue) { note('ছবি পাঠানো যায়নি', true); return; }
+      }
+      const row = { conversation_id: cur.id, sender_id: uid, body };
+      if (path) row.image_path = path;
+      const { data, error } = await sb.from('chat_messages').insert(row).select().single();
+      if (error) { note(/too_fast/.test(error.message) ? 'একটু ধীরে পাঠান' : 'পাঠানো যায়নি', true); return; }
+      t.value = ''; t.style.height = 'auto';
+      clearPending();
+      if (!curMsgs.some(x => x.id === data.id)) curMsgs.push(data);
+      cur.last = data; sortConvs();
+      drawMsgs(); scrollBottom();
+    } catch (e) {
+      console.error(e);
+      note('পাঠানো যায়নি', true);
+    } finally {
+      sending = false;
+      const b2 = $('.ch-send');
+      if (b2) b2.disabled = false;
+    }
+  }
+
+  async function delMsg(m) {
+    if (m.image_path) { try { await sb.storage.from(BUCKET).remove([m.image_path]); } catch (e) {} }
+    await rpc('delete_message', { p_id: m.id });
   }
 
   /* ===== গ্রুপ ===== */
   function newGroupView() {
     const fl = fr.rows.filter(r => r.status === 'accepted');
-    box.innerHTML = head('নতুন গ্রুপ', 'tomain') + `<div class="ch-body">
+    box.innerHTML = head(brand('নতুন গ্রুপ'), 'tomain') + `<div class="ch-body">
       <input id="chGt" placeholder="গ্রুপের নাম" maxlength="60">
       <div class="ch-sec">সদস্য বাছুন (বন্ধুদের মধ্য থেকে)</div>
-      ${fl.length ? fl.map(r => { const id = otherId(r), u = U(id); return `<label class="ch-row"><input type="checkbox" class="chPick" value="${id}" style="width:auto;margin:0"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div></label>`; }).join('') : '<p class="ch-note">আগে কিছু বন্ধু যোগ করুন।</p>'}
+      ${fl.length ? fl.map(r => { const id = otherId(r), u = U(id); return `<label class="ch-row"><input type="checkbox" class="chPick" value="${id}" style="width:auto;margin:0">${av(u.display_name, id)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div></label>`; }).join('') : '<p class="ch-note">আগে কিছু বন্ধু যোগ করুন।</p>'}
       <button class="btn" data-act="mkgroup" style="width:100%;margin-top:10px">গ্রুপ তৈরি করুন</button></div>`;
   }
 
@@ -417,10 +572,10 @@
     const iAdmin = (cur.members.find(x => x.user_id === uid) || {}).role === 'admin';
     const inIds = cur.members.map(x => x.user_id);
     const addable = fr.rows.filter(r => r.status === 'accepted' && !inIds.includes(otherId(r)));
-    box.innerHTML = head(esc(cur.title || 'গ্রুপ'), 'backchat') + `<div class="ch-body">
+    box.innerHTML = head(`<div class="tx"><b>${esc(cur.title || 'গ্রুপ')}</b><small>গ্রুপের তথ্য</small></div>`, 'backchat') + `<div class="ch-body">
       <div class="ch-sec">সদস্য (${cur.members.length})</div>
-      ${cur.members.map(m => { const u = m.chat_users || {}; return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name || 'সদস্য')}${m.role === 'admin' ? ' ⭐' : ''}</b><small>@${esc(u.username || '')}</small></div>${iAdmin && m.user_id !== uid ? `<button class="btn small danger" data-act="gkick" data-uid="${m.user_id}">সরান</button>` : ''}</div>`; }).join('')}
-      ${iAdmin ? `<div class="ch-sec">বন্ধু যোগ করুন</div>${addable.length ? addable.map(r => { const id = otherId(r), u = U(id); return `<div class="ch-row"><div class="ch-av">${ini(u.display_name)}</div><div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div><button class="btn small" data-act="gadd" data-uid="${id}">যোগ</button></div>`; }).join('') : '<p class="ch-note">যোগ করার মতো আর কোনো বন্ধু নেই।</p>'}` : ''}
+      ${cur.members.map(m => { const u = m.chat_users || {}; return `<div class="ch-row">${av(u.display_name, m.user_id)}<div class="ch-mid"><b>${esc(u.display_name || 'সদস্য')}${m.role === 'admin' ? ' ⭐' : ''}</b><small>@${esc(u.username || '')}</small></div>${iAdmin && m.user_id !== uid ? `<button class="btn small danger" data-act="gkick" data-uid="${m.user_id}">সরান</button>` : ''}</div>`; }).join('')}
+      ${iAdmin ? `<div class="ch-sec">বন্ধু যোগ করুন</div>${addable.length ? addable.map(r => { const id = otherId(r), u = U(id); return `<div class="ch-row">${av(u.display_name, id)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div><button class="btn small" data-act="gadd" data-uid="${id}">যোগ</button></div>`; }).join('') : '<p class="ch-note">যোগ করার মতো আর কোনো বন্ধু নেই।</p>'}` : ''}
       <button class="btn danger" data-act="gleave" style="width:100%;margin-top:14px">গ্রুপ ছেড়ে দিন</button></div>`;
   }
 
@@ -460,10 +615,12 @@
           break;
         }
         case 'fmenu': {
-          const c = prompt('১ = আনফ্রেন্ড\n২ = ব্লক\n৩ = রিপোর্ট\nনম্বর লিখুন:');
-          if (c === '1') { await rpc('remove_friend', { p_other: d.uid }, 'আনফ্রেন্ড করা হয়েছে'); await loadFriends(); leaveTyping(); cur = null; mainView(); }
-          else if (c === '2') { await rpc('block_user', { p_target: d.uid }, 'ব্লক করা হয়েছে'); await loadFriends(); leaveTyping(); cur = null; mainView(); }
-          else if (c === '3') { const why = prompt('রিপোর্টের কারণ লিখুন:'); if (why !== null) await rpc('report_user', { p_user: d.uid, p_reason: why }, 'রিপোর্ট পাঠানো হয়েছে'); }
+          const id = d.uid;
+          sheet(U(id).display_name || '', [
+            { label: '🚫 ব্লক করুন', danger: true, fn: async () => { await rpc('block_user', { p_target: id }, 'ব্লক করা হয়েছে'); await loadFriends(); leaveTyping(); cur = null; mainView(); } },
+            { label: '💔 আনফ্রেন্ড', danger: true, fn: async () => { await rpc('remove_friend', { p_other: id }, 'আনফ্রেন্ড করা হয়েছে'); await loadFriends(); leaveTyping(); cur = null; mainView(); } },
+            { label: '🚩 রিপোর্ট করুন', fn: async () => { const why = prompt('রিপোর্টের কারণ লিখুন:'); if (why !== null) await rpc('report_user', { p_user: id, p_reason: why }, 'রিপোর্ট পাঠানো হয়েছে'); } }
+          ]);
           break;
         }
         case 'newgroup': newGroupView(); break;
@@ -488,15 +645,24 @@
           break;
         case 'emotog': { const x = $('#chEmo'); x.style.display = x.style.display === 'flex' ? 'none' : 'flex'; break; }
         case 'emo': { const t = $('#chTxt'); t.value += d.e; t.focus(); break; }
+        case 'pick': $('#chFile').click(); break;
+        case 'unpick': clearPending(); break;
         case 'send': await send(); break;
+        case 'zoom': {
+          e.stopPropagation();
+          if (!el.src) break;
+          lb.querySelector('img').src = el.src;
+          lb.classList.add('open');
+          break;
+        }
         case 'mact': {
           const m = curMsgs.find(x => String(x.id) === d.id);
           if (!m || m.deleted) break;
-          if (m.sender_id === uid) { if (confirm('বার্তাটি মুছে ফেলবেন?')) await rpc('delete_message', { p_id: m.id }); }
-          else if (confirm('এই বার্তাটি রিপোর্ট করবেন?')) {
-            const why = prompt('রিপোর্টের কারণ লিখুন:');
-            if (why !== null) await rpc('report_message', { p_id: m.id, p_reason: why }, 'রিপোর্ট পাঠানো হয়েছে');
-          }
+          const items = [];
+          if (m.body) items.push({ label: '📋 লেখা কপি করুন', fn: () => { try { navigator.clipboard.writeText(m.body); note('কপি হয়েছে'); } catch (er) {} } });
+          if (m.sender_id === uid) items.push({ label: '🗑️ মুছে ফেলুন', danger: true, fn: () => delMsg(m) });
+          else items.push({ label: '🚩 রিপোর্ট করুন', fn: async () => { const why = prompt('রিপোর্টের কারণ লিখুন:'); if (why !== null) await rpc('report_message', { p_id: m.id, p_reason: why }, 'রিপোর্ট পাঠানো হয়েছে'); } });
+          sheet('', items);
           break;
         }
         case 'delrep': await sb.from('chat_reports').delete().eq('id', +d.id); renderTab(); break;
@@ -513,10 +679,23 @@
         typingCh.send({ type: 'broadcast', event: 'typing', payload: { uid, name: me.display_name } });
       }
     }
+    if (e.target.id === 'chFilter') { filterQ = e.target.value; drawList(); }
   });
   box.addEventListener('keydown', e => {
     if (e.target.id === 'chTxt' && e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); send(); }
     if (e.target.id === 'chQ' && e.key === 'Enter') doSearch();
+  });
+  box.addEventListener('change', e => {
+    if (e.target.id === 'chFile') {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (f) setPending(f);
+    }
+  });
+  box.addEventListener('paste', e => {
+    if (e.target.id !== 'chTxt' || !e.clipboardData) return;
+    const f = [...e.clipboardData.files].find(x => x.type.startsWith('image/'));
+    if (f) { e.preventDefault(); setPending(f); }
   });
 
   fab.onclick = () => {
@@ -524,7 +703,11 @@
     if (!seenSplash) { seenSplash = true; splash(); } else entry();
   };
   ov.addEventListener('click', e => { if (e.target === ov) closeAll(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen()) closeAll(); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (lb.classList.contains('open')) lb.classList.remove('open');
+    else if (isOpen()) closeAll();
+  });
 
   (async function init() {
     try {
