@@ -6,6 +6,15 @@
 <title>লগইন | Hablullah Educational Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+.pw{position:relative;margin:6px 0 10px}
+.pw input{margin:0;padding-right:50px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;cursor:pointer;color:var(--muted);padding:6px 8px;border-radius:8px;line-height:0}
+.pw button:hover{color:var(--accent2);background:rgba(43,140,255,.12)}
+.pw svg{width:22px;height:22px}
+#resendBox{display:none;margin-top:12px}
+#resend:disabled{opacity:.7;cursor:not-allowed}
+</style>
 </head>
 <body>
 
@@ -25,10 +34,19 @@
   <h1 id="title">লগইন করুন</h1>
   <input id="name" placeholder="আপনার নাম" style="display:none" autocomplete="name">
   <input id="email" type="email" placeholder="ইমেইল" autocomplete="email">
-  <input id="pass" type="password" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)" autocomplete="current-password">
+
+  <div class="pw">
+    <input id="pass" type="password" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)" autocomplete="current-password">
+    <button type="button" id="eye" aria-label="পাসওয়ার্ড দেখান" title="পাসওয়ার্ড দেখান বা লুকান"></button>
+  </div>
+
   <button class="btn" id="go" style="width:100%">লগইন</button>
   <p style="margin-top:12px;font-size:14px"><a href="#" id="forgot" style="color:var(--accent2)">পাসওয়ার্ড ভুলে গেছেন?</a></p>
   <div id="status"></div>
+
+  <div id="resendBox">
+    <button class="btn ghost" id="resend" style="width:100%" disabled>আবার লিংক পাঠান</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -36,10 +54,69 @@
 <script>
 const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-let mode = 'login';
 const home = location.href.replace(/login\.html.*$/, 'index.html');
+const bn = n => Number(n).toLocaleString('bn-BD');
+let mode = 'login';
+let pendingEmail = '';
 
 function say(t, ok) { $('status').innerHTML = `<div class="msg ${ok ? 'okk' : 'err'}">${t}</div>`; }
+
+/* ===== চোখের আইকন ===== */
+const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+function setEye(show) {
+  $('pass').type = show ? 'text' : 'password';
+  $('eye').innerHTML = show ? EYE_OFF : EYE;
+  $('eye').setAttribute('aria-label', show ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখান');
+}
+$('eye').onclick = () => { setEye($('pass').type === 'password'); $('pass').focus(); };
+setEye(false);
+
+/* ===== কাউন্টডাউন (৬০ থেকে ১ পর্যন্ত, রিফ্রেশেও চলতে থাকে) ===== */
+const timers = {};
+function runCd(key, end, onTick, onDone) {
+  clearInterval(timers[key]);
+  const tick = () => {
+    const left = Math.ceil((end - Date.now()) / 1000);
+    if (left <= 0) { clearInterval(timers[key]); onDone(); return; }
+    onTick(left);
+  };
+  tick();
+  timers[key] = setInterval(tick, 1000);
+}
+function startCd(key, secs, onTick, onDone) {
+  const end = Date.now() + secs * 1000;
+  try { localStorage.setItem('cd_' + key, String(end)); } catch (e) {}
+  runCd(key, end, onTick, onDone);
+}
+function resumeCd(key, onTick, onDone) {
+  let end = 0;
+  try { end = +localStorage.getItem('cd_' + key) || 0; } catch (e) {}
+  if (end > Date.now()) { runCd(key, end, onTick, onDone); return true; }
+  return false;
+}
+
+/* ===== কনফার্মেশন লিংক আবার পাঠানো ===== */
+const resendTick = left => { const b = $('resend'); b.disabled = true; b.textContent = `আবার লিংক পাঠান (${bn(left)} সেকেন্ড)`; };
+const resendDone = () => { const b = $('resend'); b.disabled = false; b.textContent = 'আবার লিংক পাঠান'; };
+function showResend(email, startNow) {
+  pendingEmail = email;
+  try { sessionStorage.setItem('pendingEmail', email); } catch (e) {}
+  $('resendBox').style.display = 'block';
+  if (startNow) startCd('resend', 60, resendTick, resendDone);
+  else if (!resumeCd('resend', resendTick, resendDone)) resendDone();
+}
+$('resend').onclick = async () => {
+  const email = pendingEmail || $('email').value.trim();
+  if (!email) return say('উপরের ঘরে ইমেইল লিখুন।');
+  $('resend').disabled = true;
+  const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: home } });
+  if (error) { say(nice(error.message)); resendDone(); return; }
+  say('কনফার্মেশন লিংক আবার পাঠানো হয়েছে।', true);
+  startCd('resend', 60, resendTick, resendDone);
+};
+
+/* ===== ট্যাব ===== */
 function setMode(m) {
   mode = m;
   $('tabLogin').classList.toggle('active', m === 'login');
@@ -57,10 +134,11 @@ function nice(msg) {
   if (/Invalid login/i.test(msg)) return 'ইমেইল বা পাসওয়ার্ড ভুল।';
   if (/Email not confirmed/i.test(msg)) return 'আগে ইমেইলে পাঠানো কনফার্মেশন লিংকে চাপ দিন।';
   if (/already registered/i.test(msg)) return 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে।';
-  if (/rate limit/i.test(msg)) return 'অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন।';
+  if (/rate limit|security purposes|too many/i.test(msg)) return 'অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন।';
   return msg;
 }
 
+/* ===== লগইন ও রেজিস্টার ===== */
 $('go').onclick = async () => {
   const email = $('email').value.trim(), pass = $('pass').value;
   if (!email || !pass) return say('ইমেইল ও পাসওয়ার্ড দিন।');
@@ -69,7 +147,11 @@ $('go').onclick = async () => {
   if (mode === 'login') {
     const { error } = await sb.auth.signInWithPassword({ email, password: pass });
     $('go').disabled = false;
-    if (error) return say(nice(error.message));
+    if (error) {
+      say(nice(error.message));
+      if (/Email not confirmed/i.test(error.message)) showResend(email, false);
+      return;
+    }
     location.href = 'index.html';
   } else {
     const { data, error } = await sb.auth.signUp({
@@ -79,20 +161,35 @@ $('go').onclick = async () => {
     $('go').disabled = false;
     if (error) return say(nice(error.message));
     if (data.session) { location.href = 'index.html'; return; }
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      return say('এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। লগইন করুন।');
+    }
     say('রেজিস্টার হয়েছে! ইমেইলে একটা কনফার্মেশন লিংক গেছে, সেটাতে চাপ দিন, তারপর লগইন করুন।', true);
+    showResend(email, true);
   }
 };
 
+/* ===== পাসওয়ার্ড রিসেট (৬০ সেকেন্ডের কাউন্টডাউনসহ) ===== */
+let forgotBusy = false;
+const forgotTick = left => { forgotBusy = true; const f = $('forgot'); f.textContent = `আবার পাঠান (${bn(left)} সেকেন্ড)`; f.style.opacity = '.6'; f.style.pointerEvents = 'none'; };
+const forgotDone = () => { forgotBusy = false; const f = $('forgot'); f.textContent = 'পাসওয়ার্ড ভুলে গেছেন?'; f.style.opacity = '1'; f.style.pointerEvents = 'auto'; };
 $('forgot').onclick = async e => {
   e.preventDefault();
+  if (forgotBusy) return;
   const email = $('email').value.trim();
   if (!email) return say('উপরের ঘরে আগে আপনার ইমেইল লিখুন।');
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: home });
   if (error) return say(nice(error.message));
   say('পাসওয়ার্ড রিসেটের লিংক ইমেইলে পাঠানো হয়েছে।', true);
+  startCd('forgot', 60, forgotTick, forgotDone);
 };
 
 [ 'email', 'pass' ].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); }));
+
+/* ===== পেজ খোলার সময় ===== */
+try { pendingEmail = sessionStorage.getItem('pendingEmail') || ''; } catch (e) {}
+if (resumeCd('resend', resendTick, resendDone)) $('resendBox').style.display = 'block';
+resumeCd('forgot', forgotTick, forgotDone);
 sb.auth.getSession().then(({ data }) => { if (data.session) location.href = 'index.html'; });
 </script>
 </body>
