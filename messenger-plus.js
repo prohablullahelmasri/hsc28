@@ -114,7 +114,7 @@
   let tab = 'chats', convs = [], cur = null, curMsgs = [], filterQ = '';
   let fr = { rows: [], users: {} };
   let typingCh = null, typingTimer = null, lastTyp = 0, globalCh = null, seenSplash = false;
-  let pending = null, sending = false;
+  let pending = null, sending = false, polling = false, pollTick = 0;
   const urlCache = {};
 
   const isOpen = () => ov.classList.contains('open');
@@ -127,6 +127,7 @@
   const U = id => fr.users[id] || { display_name: 'ব্যবহারকারী', username: '?' };
   const sortConvs = () => convs.sort((a, b) => new Date((b.last || b).created_at) - new Date((a.last || a).created_at));
   const reqCount = () => fr.rows.filter(r => r.status === 'pending' && r.addressee === uid).length;
+  const totalUnread = () => convs.reduce((s, c) => s + (c.unread || 0), 0);
 
   function beep() {
     try {
@@ -139,7 +140,7 @@
   }
 
   function updBadge() {
-    const n = convs.reduce((s, c) => s + (c.unread || 0), 0) + reqCount();
+    const n = totalUnread() + reqCount();
     const b = $('#chBadge');
     if (!b) return;
     b.style.display = n ? 'block' : 'none';
@@ -226,7 +227,8 @@
     convs = (c.data || []).map(cv => {
       const members = (m.data || []).filter(x => x.conversation_id === cv.id);
       const list = (g.data || []).filter(x => x.conversation_id === cv.id);
-      const unread = list.filter(x => x.sender_id !== uid && new Date(x.created_at) > new Date(lr[cv.id])).length;
+      let unread = list.filter(x => x.sender_id !== uid && new Date(x.created_at) > new Date(lr[cv.id])).length;
+      if (cur && cur.id === cv.id && isOpen()) unread = 0;
       return { ...cv, members, last: list[0] || null, unread };
     });
     sortConvs();
@@ -272,7 +274,7 @@
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'friendships' }, onFr)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'friendships' }, onFr)
-      .subscribe();
+      .subscribe(status => { if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('chat realtime:', status); });
   }
   async function onFr() {
     await loadFriends();
@@ -282,16 +284,17 @@
     const m = p.new;
     let cv = convs.find(c => c.id === m.conversation_id);
     if (!cv) { await loadConvs(); cv = convs.find(c => c.id === m.conversation_id); if (!cv) return; }
-    cv.last = m;
     if (cur && cur.id === m.conversation_id && isOpen()) {
-      if (!curMsgs.some(x => x.id === m.id)) { curMsgs.push(m); drawMsgs(); }
+      cv.last = m;
+      if (!curMsgs.some(x => x.id === m.id)) { curMsgs.push(m); drawMsgs(); if (m.sender_id !== uid) beep(); }
       if (m.sender_id !== uid) markRead(cur.id);
-    } else if (m.sender_id !== uid) {
-      cv.unread = (cv.unread || 0) + 1;
-      beep();
+    } else {
+      if (cv.last && cv.last.id === m.id) return;
+      cv.last = m;
+      if (m.sender_id !== uid) { cv.unread = (cv.unread || 0) + 1; beep(); }
     }
     sortConvs(); updBadge();
-    if (isOpen() && !cur && $('#chBody') && tab === 'chats') renderTab();
+    if (isOpen() && !cur && $('#chBody') && tab === 'chats') drawList();
   }
   function onMsgUpd(p) {
     const m = p.new;
@@ -310,6 +313,50 @@
     if (mm) mm.last_read_at = n.last_read_at;
     if (cur && cur.id === cv.id) drawMsgs();
   }
+
+  /* ===== রিয়েলটাইম কাজ না করলেও বার্তা আনার ব্যবস্থা (প্রতি ৫ সেকেন্ডে) ===== */
+  async function poll() {
+    if (!uid || !me || polling) return;
+    polling = true;
+    pollTick++;
+    try {
+      if (!isOpen()) {
+        if (pollTick % 4 === 0) {
+          const before = totalUnread();
+          await loadConvs();
+          if (totalUnread() > before) beep();
+        }
+      } else if (cur) {
+        let q = sb.from('chat_messages').select('*').eq('conversation_id', cur.id).order('created_at', { ascending: true });
+        if (curMsgs.length) q = q.gt('created_at', curMsgs[curMsgs.length - 1].created_at);
+        const { data } = await q;
+        const fresh = (data || []).filter(m => !curMsgs.some(x => x.id === m.id));
+        if (fresh.length) {
+          fresh.forEach(m => curMsgs.push(m));
+          cur.last = curMsgs[curMsgs.length - 1];
+          drawMsgs();
+          if (fresh.some(m => m.sender_id !== uid)) { markRead(cur.id); beep(); }
+        }
+        if (pollTick % 3 === 0) {
+          const { data: mem } = await sb.from('conversation_members').select('user_id,last_read_at').eq('conversation_id', cur.id);
+          let changed = false;
+          (mem || []).forEach(r => {
+            const mm = cur.members.find(x => x.user_id === r.user_id);
+            if (mm && mm.last_read_at !== r.last_read_at) { mm.last_read_at = r.last_read_at; changed = true; }
+          });
+          if (changed) drawMsgs();
+        }
+      } else {
+        const before = totalUnread();
+        await loadConvs();
+        if (totalUnread() > before) beep();
+        if ($('#chBody') && tab === 'chats') drawList();
+        if (pollTick % 3 === 0) { await loadFriends(); if ($('#chBody') && tab === 'friends' && !document.activeElement.closest('#chBody')) renderTab(); }
+      }
+    } catch (e) {}
+    polling = false;
+  }
+  setInterval(poll, 5000);
 
   /* ===== "লিখছে..." ===== */
   function joinTyping(cid) {
@@ -373,11 +420,12 @@
       <button class="btn" data-act="saveu" style="width:100%">সংরক্ষণ করুন</button><div id="chErr"></div></div>`;
   }
 
-  function mainView() {
+  async function mainView() {
     cur = null; leaveTyping(); clearPending();
     box.innerHTML = head(brand('@' + me.username)) + '<div class="ch-tabs" id="chTabs"></div><div class="ch-body" id="chBody"></div>' +
       `<div class="ch-foot">🥜 “${QUOTE}” — ${NAME}</div>`;
     renderTab();
+    try { await loadConvs(); await loadFriends(); if (!cur && $('#chBody')) renderTab(); } catch (e) {}
   }
 
   function renderTab() {
@@ -714,6 +762,8 @@
       const { data: { session } } = await sb.auth.getSession();
       if (!session) return;
       uid = session.user.id;
+      try { sb.realtime.setAuth(session.access_token); } catch (e) {}
+      sb.auth.onAuthStateChange((ev, s) => { if (s) { try { sb.realtime.setAuth(s.access_token); } catch (e) {} } });
       const { data: p } = await sb.from('profiles').select('role').eq('id', uid).maybeSingle();
       isAdmin = !!(p && p.role === 'admin');
       const { data: u } = await sb.from('chat_users').select('*').eq('id', uid).maybeSingle();
