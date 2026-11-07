@@ -24,6 +24,18 @@
   const colorOf = id => { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PAL[h % PAL.length]; };
   const av = (n, id, group) => `<div class="ch-av" style="background:${group ? 'linear-gradient(135deg,#8e44ad,#e84393)' : colorOf(id || n)}">${group ? '👥' : ini(n)}</div>`;
 
+  const errText = e => {
+    const m = (e && e.message) || '';
+    if (/too_fast/.test(m)) return 'একটু ধীরে চেষ্টা করুন';
+    if (/not_friends/.test(m)) return 'আগে বন্ধু হতে হবে (দুজনকেই বন্ধু থাকতে হবে)';
+    if (/not_member/.test(m)) return 'আপনি এই চ্যাটের সদস্য নন';
+    if (/no_profile/.test(m)) return 'আগে চ্যাট প্রোফাইল তৈরি করুন';
+    if (/not_logged_in/.test(m)) return 'আবার লগইন করুন';
+    if (/too_long/.test(m)) return 'বার্তা অনেক বড়';
+    if (/does not exist|schema cache|Could not find/i.test(m)) return 'ডাটাবেসের সেটআপ অসম্পূর্ণ, SQL আবার চালান: ' + m;
+    return 'কাজটি করা যায়নি: ' + m;
+  };
+
   const css = document.createElement('style');
   css.textContent = `
   #chFab{position:fixed;left:16px;bottom:18px;width:60px;height:60px;border-radius:50%;border:2px solid #e0a85f;cursor:pointer;z-index:70;background:#fff3df;box-shadow:0 8px 22px rgba(224,168,95,.55);transition:transform .25s;display:flex;align-items:center;justify-content:center;padding:0}
@@ -149,10 +161,7 @@
 
   async function rpc(name, args, okMsg) {
     const { data, error } = await sb.rpc(name, args);
-    if (error) {
-      note(/too_fast/.test(error.message) ? 'একটু ধীরে চেষ্টা করুন' : /not_friends/.test(error.message) ? 'আগে বন্ধু হতে হবে' : 'কাজটি করা যায়নি', true);
-      return { error };
-    }
+    if (error) { console.error(name, error); note(errText(error), true); return { error }; }
     if (okMsg) note(okMsg);
     return { data };
   }
@@ -574,25 +583,30 @@
     sending = true;
     const btn = $('.ch-send');
     if (btn) btn.disabled = true;
+    let path = null;
     try {
-      let path = null;
       if (pending) {
         path = `${cur.id}/${uid}/${crypto.randomUUID()}.jpg`;
         const { error: ue } = await sb.storage.from(BUCKET).upload(path, pending.blob, { contentType: 'image/jpeg', upsert: false });
-        if (ue) { note('ছবি পাঠানো যায়নি', true); return; }
+        if (ue) { console.error(ue); note('ছবি পাঠানো যায়নি: ' + ue.message, true); path = null; return; }
       }
-      const row = { conversation_id: cur.id, sender_id: uid, body };
-      if (path) row.image_path = path;
-      const { data, error } = await sb.from('chat_messages').insert(row).select().single();
-      if (error) { console.error(error); note(/too_fast/.test(error.message) ? 'একটু ধীরে পাঠান' : 'পাঠানো যায়নি: ' + error.message, true); return; }
+      const { data, error } = await sb.rpc('send_message', { p_cid: cur.id, p_body: body, p_image: path });
+      if (error) {
+        console.error(error);
+        note(errText(error), true);
+        if (path) { try { await sb.storage.from(BUCKET).remove([path]); } catch (e) {} }
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
       t.value = ''; t.style.height = 'auto';
       clearPending();
-      if (!curMsgs.some(x => x.id === data.id)) curMsgs.push(data);
-      cur.last = data; sortConvs();
+      if (row && !curMsgs.some(x => x.id === row.id)) curMsgs.push(row);
+      if (row) cur.last = row;
+      sortConvs();
       drawMsgs(); scrollBottom();
     } catch (e) {
       console.error(e);
-      note('পাঠানো যায়নি', true);
+      note('পাঠানো যায়নি: ' + (e && e.message ? e.message : ''), true);
     } finally {
       sending = false;
       const b2 = $('.ch-send');
@@ -646,7 +660,7 @@
           if (!/^[a-z0-9_]{3,20}$/.test(un)) { er.innerHTML = '<div class="msg err">ইউজারনেম ৩-২০ অক্ষরের হতে হবে (a-z, 0-9, _)।</div>'; break; }
           if (!dn) { er.innerHTML = '<div class="msg err">আপনার নাম লিখুন।</div>'; break; }
           const { data, error } = await sb.from('chat_users').insert({ id: uid, username: un, display_name: dn }).select().single();
-          if (error) { er.innerHTML = `<div class="msg err">${error.code === '23505' ? 'এই ইউজারনেম আগেই নেওয়া হয়েছে।' : 'সংরক্ষণ করা যায়নি।'}</div>`; break; }
+          if (error) { er.innerHTML = `<div class="msg err">${error.code === '23505' ? 'এই ইউজারনেম আগেই নেওয়া হয়েছে।' : 'সংরক্ষণ করা যায়নি: ' + esc(error.message)}</div>`; break; }
           me = data; await loadConvs(); await loadFriends(); subscribe(); mainView();
           break;
         }
@@ -715,7 +729,7 @@
         }
         case 'delrep': await sb.from('chat_reports').delete().eq('id', +d.id); renderTab(); break;
       }
-    } catch (err) { console.error(err); note('কিছু একটা সমস্যা হয়েছে', true); }
+    } catch (err) { console.error(err); note('কিছু একটা সমস্যা হয়েছে: ' + (err && err.message ? err.message : ''), true); }
   });
 
   box.addEventListener('input', e => {
