@@ -146,7 +146,8 @@
   const cname = cv => cv.kind === 'group' ? (cv.title || 'গ্রুপ') : ((otherUser(cv) || {}).display_name || 'ব্যবহারকারী');
   const otherId = r => r.requester === uid ? r.addressee : r.requester;
   const relWith = id => fr.rows.find(r => otherId(r) === id);
-  const U = id => fr.users[id] || { display_name: 'ব্যবহারকারী', username: '?' };
+    const seenUsers = {};
+  const U = id => fr.users[id] || seenUsers[id] || { display_name: 'ব্যবহারকারী', username: '?' };
   const sortConvs = () => convs.sort((a, b) => new Date((b.last || b).created_at) - new Date((a.last || a).created_at));
   const reqCount = () => fr.rows.filter(r => r.status === 'pending' && r.addressee === uid).length;
   const totalUnread = () => convs.reduce((s, c) => s + (c.unread || 0), 0);
@@ -553,7 +554,7 @@
     const out = fr.rows.filter(r => r.status === 'pending' && r.requester === uid);
     const fl = fr.rows.filter(r => r.status === 'accepted');
     const bl = fr.rows.filter(r => r.status === 'blocked' && r.blocked_by === uid);
-    const row = (id, extra) => { const u = U(id); return `<div class="ch-row">${av(u.display_name, id, false, u.avatar_path)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${extra}</div>`; };
+        const row = (id, extra) => { const u = U(id); return `<div class="ch-row" data-act="uprof" data-uid="${id}">${av(u.display_name, id, false, u.avatar_path)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${extra}</div>`; };
     let h = `<div class="ch-card"><b>বন্ধু খুঁজুন</b><input id="chQ" placeholder="ইউজারনেম বা নাম" autocomplete="off" autocapitalize="none"><div class="ch-btns"><button class="btn small" data-act="search">খুঁজুন</button></div><div id="chRes"></div></div>`;
     h += `<div class="ch-note">আপনার ইউজারনেম: <b>@${esc(me.username)}</b></div>`;
     if (inc.length) h += '<div class="ch-sec">বন্ধুত্বের অনুরোধ</div>' + inc.map(r => row(r.requester, `<button class="btn small" data-act="acc" data-id="${r.id}">গ্রহণ</button><button class="btn small ghost" data-act="dec" data-id="${r.id}">বাতিল</button>`)).join('');
@@ -580,13 +581,14 @@
     const { data, error } = await sb.from('chat_users').select('*').or(`username.ilike.${w}*,display_name.ilike.*${w}*`).neq('id', uid).limit(10);
     if (error) { out.innerHTML = '<p class="ch-note">খোঁজা যায়নি।</p>'; return; }
     if (!data.length) { out.innerHTML = '<p class="ch-note">কাউকে পাওয়া যায়নি।</p>'; return; }
+        data.forEach(u => { seenUsers[u.id] = u; });
     out.innerHTML = data.map(u => {
       const r = relWith(u.id);
       let b = '';
       if (!r) b = `<button class="btn small" data-act="req" data-uid="${u.id}">যোগ করুন</button>`;
       else if (r.status === 'accepted') b = `<button class="btn small" data-act="dm" data-uid="${u.id}">মেসেজ</button>`;
       else if (r.status === 'pending') b = r.requester === uid ? '<span class="ch-note">অনুরোধ পাঠানো হয়েছে</span>' : `<button class="btn small" data-act="acc" data-id="${r.id}">গ্রহণ</button>`;
-      return `<div class="ch-row">${av(u.display_name, u.id, false, u.avatar_path)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${b}</div>`;
+           return `<div class="ch-row" data-act="uprof" data-uid="${u.id}">${av(u.display_name, u.id, false, u.avatar_path)}<div class="ch-mid"><b>${esc(u.display_name)}</b><small>@${esc(u.username)}</small></div>${b}</div>`;
     }).join('');
   }
 
@@ -763,6 +765,25 @@
           if (error) { note('নাম বদলানো যায়নি: ' + error.message, true); break; }
           me = data; note('নাম বদলেছে');
           await loadConvs(); renderTab();
+          break;
+        }
+                  case 'uprof': {
+          const id = d.uid, r = relWith(id), u = U(id);
+          if (r && r.status === 'accepted') {
+            const { data, error } = await rpc('open_dm', { p_other: id });
+            if (error) break;
+            await loadConvs(); await openConv(data);
+            break;
+          }
+          const items = [];
+          if (!r) items.push({ label: '➕ বন্ধু হিসেবে যোগ করুন', fn: async () => { await rpc('send_request', { p_target: id }, 'অনুরোধ পাঠানো হয়েছে'); await loadFriends(); renderTab(); } });
+          else if (r.status === 'pending' && r.addressee === uid) {
+            items.push({ label: '✅ অনুরোধ গ্রহণ করুন', fn: async () => { await rpc('respond_request', { p_req: r.id, p_accept: true }, 'এখন আপনারা বন্ধু'); await loadFriends(); renderTab(); } });
+            items.push({ label: '❌ অনুরোধ বাতিল করুন', danger: true, fn: async () => { await rpc('respond_request', { p_req: r.id, p_accept: false }); await loadFriends(); renderTab(); } });
+          } else if (r.status === 'pending') items.push({ label: '↩️ পাঠানো অনুরোধ ফিরিয়ে নিন', danger: true, fn: async () => { await rpc('remove_friend', { p_other: id }); await loadFriends(); renderTab(); } });
+          else if (r.status === 'blocked' && r.blocked_by === uid) items.push({ label: '🔓 আনব্লক করুন', fn: async () => { await rpc('unblock_user', { p_target: id }, 'আনব্লক করা হয়েছে'); await loadFriends(); renderTab(); } });
+          items.push({ label: '🚩 রিপোর্ট করুন', fn: async () => { const why = prompt('রিপোর্টের কারণ লিখুন:'); if (why !== null) await rpc('report_user', { p_user: id, p_reason: why }, 'রিপোর্ট পাঠানো হয়েছে'); } });
+          sheet(u.display_name + ' (@' + u.username + ')', items);
           break;
         }
         case 'search': await doSearch(); break;
