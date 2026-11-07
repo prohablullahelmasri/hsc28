@@ -584,7 +584,7 @@
       const row = { conversation_id: cur.id, sender_id: uid, body };
       if (path) row.image_path = path;
       const { data, error } = await sb.from('chat_messages').insert(row).select().single();
-      if (error) { note(/too_fast/.test(error.message) ? 'একটু ধীরে পাঠান' : 'পাঠানো যায়নি', true); return; }
+      if (error) { console.error(error); note(/too_fast/.test(error.message) ? 'একটু ধীরে পাঠান' : 'পাঠানো যায়নি: ' + error.message, true); return; }
       t.value = ''; t.style.height = 'auto';
       clearPending();
       if (!curMsgs.some(x => x.id === data.id)) curMsgs.push(data);
