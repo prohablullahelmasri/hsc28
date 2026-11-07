@@ -1,0 +1,43 @@
+name: Cleanup chat images
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete expired chat images
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          HOURS: 6
+        run: |
+          set -euo pipefail
+          if [[ "$SB_KEY" == sb_secret_* ]]; then
+            AUTH=(-H "apikey: $SB_KEY")
+          else
+            AUTH=(-H "apikey: $SB_KEY" -H "Authorization: Bearer $SB_KEY")
+          fi
+          CUTOFF=$(date -u -d "$HOURS hours ago" +%Y-%m-%dT%H:%M:%SZ)
+
+          KEEP=$(curl -sf "${AUTH[@]}" "$SB_URL/rest/v1/chat_reports?select=image_path&image_path=not.is.null" | jq -c '[.[].image_path]')
+          ALL=$(curl -sf "${AUTH[@]}" "$SB_URL/rest/v1/chat_messages?select=id,image_path&image_path=not.is.null&created_at=lt.$CUTOFF&limit=500")
+          ROWS=$(echo "$ALL" | jq -c --argjson keep "$KEEP" '[.[] | select(.image_path as $p | ($keep | index($p)) | not)]')
+          COUNT=$(echo "$ROWS" | jq 'length')
+          echo "মেয়াদ শেষ ছবি: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then exit 0; fi
+
+          PATHS=$(echo "$ROWS" | jq -c '{prefixes: [.[].image_path]}')
+          curl -sf -X DELETE "${AUTH[@]}" -H "Content-Type: application/json" -d "$PATHS" "$SB_URL/storage/v1/object/chat-images" > /dev/null
+
+          IDS=$(echo "$ROWS" | jq -r '[.[].id] | join(",")')
+          curl -sf -X PATCH "${AUTH[@]}" -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+            -d '{"image_path":null,"body":"🖼️ ছবির মেয়াদ শেষ হয়ে গেছে"}' \
+            "$SB_URL/rest/v1/chat_messages?id=in.($IDS)&body=eq."
+          curl -sf -X PATCH "${AUTH[@]}" -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+            -d '{"image_path":null}' \
+            "$SB_URL/rest/v1/chat_messages?id=in.($IDS)&body=neq."
+          echo "শেষ"
