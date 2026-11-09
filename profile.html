@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>আমার প্রোফাইল | Hablullah</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="form-box">
+  <h1>👤 আমার প্রোফাইল</h1>
+  <p>ইমেইল: <b id="pEmail">লোড হচ্ছে...</b></p>
+  <p>ধরন: <b id="pRole">...</b></p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+  <h3>পাসওয়ার্ড বদলান</h3>
+  <input id="newPass" type="password" placeholder="নতুন পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)">
+  <button class="btn" id="passBtn">পাসওয়ার্ড বদলান</button>
+  <div id="pMsg"></div>
+  <p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn small ghost" href="index.html">← হোমে ফিরুন</a>
+    <button class="btn small danger" id="outBtn">লগআউট</button>
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+const g = id => document.getElementById(id);
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = 'login.html'; return; }
+  g('pEmail').textContent = session.user.email;
+  const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+  g('pRole').textContent = (p && p.role === 'admin') ? 'এডমিন' : 'শিক্ষার্থী';
+}
+init();
+
+g('passBtn').onclick = async () => {
+  const pw = g('newPass').value;
+  const m = g('pMsg');
+  if (pw.length < 6) { m.className = 'msg err'; m.textContent = 'কমপক্ষে ৬ অক্ষর দিন'; return; }
+  const { error } = await sb.auth.updateUser({ password: pw });
+  m.className = error ? 'msg err' : 'msg okk';
+  m.textContent = error ? 'সমস্যা হয়েছে, আবার চেষ্টা করুন' : 'পাসওয়ার্ড বদলে গেছে ✅';
+  if (!error) g('newPass').value = '';
+};
+
+g('outBtn').onclick = async () => { await sb.auth.signOut(); location.href = 'index.html'; };
+</script>
+</body>
+</html>
