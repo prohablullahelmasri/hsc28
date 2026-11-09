@@ -75,7 +75,7 @@ async function showAuth() {
     const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
     let html = '';
     if (p && p.role === 'admin') html += '<a class="btn small" href="admin.html">এডমিন প্যানেল</a>';
-    else html += '<span class="chip">👤 ' + esc((session.user.email || '').split('@')[0]) + '</span>';
+    html += '<a class="btn small ghost" href="profile.html">👤 ' + esc((session.user.email || '').split('@')[0]) + '</a>';
     html += '<button class="btn small ghost" id="logout">লগআউট</button>';
     box.innerHTML = html;
     $('logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
