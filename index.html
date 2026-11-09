@@ -21,6 +21,7 @@
 <meta name="google-site-verification" content="fojjfJCQg6-oxBn--8Cd89YmNeAWy4x5IDn__MQt11o" /> 
 <header class="site-header"><div class="container header-in">
   <a class="brand" href="index.html"><span class="logo">🎓</span><span>Hablullah<small>Educational Hub</small></span></a>
+  <button class="menu-btn" id="menuBtn" aria-label="মেনু">☰</button>
   <nav class="nav">
     <a class="active" href="#top">হোম</a>
     <a href="#links">সরকারি লিংক</a>
@@ -29,6 +30,7 @@
     <a href="#books">বইসমূহ</a>
     <a href="#batch">এইচএসসি ২৮ ব্যাচ</a>
     <a href="#tools">টুলস</a>
+    <a href="#updates">নোটিশ</a>
     <a href="#contact">যোগাযোগ</a>
   </nav>
   <div class="auth-box" id="auth"><a class="btn small" href="login.html">লগইন</a></div>
@@ -108,5 +110,19 @@
 <script src="search-plus.js"></script>
 <script src="library-plus.js?v=1"></script>
 <script src="messenger-plus.js?v=4"></script>
+  <script>
+var menuBtn = document.getElementById('menuBtn');
+var nav = document.querySelector('.nav');
+menuBtn.onclick = function () {
+  nav.classList.toggle('open');
+  menuBtn.textContent = nav.classList.contains('open') ? '✕' : '☰';
+};
+document.querySelectorAll('.nav a').forEach(function (a) {
+  a.addEventListener('click', function () {
+    nav.classList.remove('open');
+    menuBtn.textContent = '☰';
+  });
+});
+</script>
 </body>
 </html>
