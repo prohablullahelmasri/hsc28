@@ -94,3 +94,16 @@ textarea{min-height:80px}
 @media(max-width:480px){
   .cats{grid-template-columns:repeat(2,1fr)}
 }
+
+/* হ্যামবার্গার মেনু */
+.menu-btn{display:none;background:var(--card);border:1px solid var(--line);color:var(--text);width:42px;height:42px;border-radius:10px;font-size:22px;cursor:pointer;margin-left:auto}
+@media(max-width:900px){
+  .menu-btn{display:block}
+  .nav{display:none;flex-direction:column;overflow:visible;gap:2px}
+  .nav.open{display:flex}
+  .nav a{padding:12px 14px;border-radius:10px}
+  .btn{min-height:42px}
+}
+@media(max-width:480px){
+  input,select,textarea{font-size:16px}
+}
