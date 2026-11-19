@@ -64,7 +64,7 @@
     '<button class="ai-hb ai-x" aria-label="বন্ধ করুন">✕</button></div>' +
     '<div class="ai-msgs"></div>' +
     '<div class="ai-chips"></div>' +
-    '<div class="ai-row"><input maxlength="500" placeholder="প্রশ্ন লিখুন..."><button class="ai-send" aria-label="পাঠান">➤</button></div>';
+    '<div class="ai-row"><input maxlength="1500" placeholder="প্রশ্ন লিখুন..."><button class="ai-send" aria-label="পাঠান">➤</button></div>';
 
   document.body.appendChild(fab);
   document.body.appendChild(box);
