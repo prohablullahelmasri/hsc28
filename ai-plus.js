@@ -1,18 +1,49 @@
 (function () {
   var style = document.createElement('style');
   style.textContent = `
-  .ai-fab{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:90;width:54px;height:54px;border-radius:50%;border:1px solid var(--line,#2a3b5c);background:var(--card,#12203a);color:var(--text,#fff);font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35)}
-  .ai-box{position:fixed;left:14px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:90;width:min(360px,calc(100vw - 28px));height:min(460px,calc(100vh - 140px));display:none;flex-direction:column;background:var(--card,#12203a);color:var(--text,#fff);border:1px solid var(--line,#2a3b5c);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);overflow:hidden}
-  .ai-box.show{display:flex}
-  .ai-head{padding:12px 14px;font-weight:600;border-bottom:1px solid var(--line,#2a3b5c)}
-  .ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
-  .ai-m{max-width:85%;padding:8px 12px;border-radius:12px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;font-size:15px}
-  .ai-me{align-self:flex-end;background:var(--accent,#2b8cff);color:#fff}
-  .ai-bot{align-self:flex-start;background:rgba(127,127,127,.18)}
+  .ai-fab{position:fixed;left:19px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:90;width:46px;height:46px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.5);transition:transform .2s}
+  .ai-fab:hover{transform:scale(1.08)}
+  .ai-fab::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #4f7cff;animation:aiPulse 2.4s ease-out infinite;pointer-events:none}
+  .ai-fab::after{content:"";position:absolute;right:1px;top:1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
+  @keyframes aiPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+
+  .ai-box{position:fixed;left:14px;bottom:calc(136px + env(safe-area-inset-bottom,0px));z-index:90;width:min(370px,calc(100vw - 28px));height:min(460px,calc(100vh - 200px));display:flex;flex-direction:column;background:var(--card,#12203a);color:var(--text,#fff);border:1px solid var(--line,#2a3b5c);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.55);overflow:hidden;opacity:0;visibility:hidden;transform:translateY(12px) scale(.97);transform-origin:bottom left;transition:opacity .22s,transform .22s,visibility .22s}
+  .ai-box.show{opacity:1;visibility:visible;transform:none}
+
+  .ai-head{display:flex;align-items:center;gap:10px;padding:13px 14px;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff}
+  .ai-av{position:relative;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px}
+  .ai-av::after{content:"";position:absolute;right:0;bottom:0;width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid #3558d8}
+  .ai-ttl{flex:1;line-height:1.25}
+  .ai-ttl b{display:block;font-size:15px}
+  .ai-ttl small{opacity:.9;font-size:12px}
+  .ai-hb{background:rgba(255,255,255,.18);border:0;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px}
+  .ai-hb:hover{background:rgba(255,255,255,.3)}
+
+  .ai-msgs{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+  .ai-m{max-width:88%;padding:9px 13px 6px;font-size:15px;line-height:1.55;word-wrap:break-word;animation:aiIn .25s ease}
+  @keyframes aiIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .ai-me{align-self:flex-end;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;border-radius:18px 18px 4px 18px}
+  .ai-bot{align-self:flex-start;background:rgba(127,127,127,.17);border-radius:18px 18px 18px 4px}
+  .ai-t > div{margin:0}
+  .ai-t .ai-li{padding-left:16px;position:relative}
+  .ai-t .ai-li::before{content:"•";position:absolute;left:3px}
+  .ai-t .ai-gap{height:6px}
+  .ai-meta{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:3px;font-size:11px;opacity:.65}
+  .ai-cp{background:transparent;border:0;color:inherit;cursor:pointer;font-size:11px;padding:0;font-family:inherit}
+  .ai-dots i{display:inline-block;width:7px;height:7px;margin:4px 2px;border-radius:50%;background:currentColor;opacity:.4;animation:aiBlink 1.2s infinite}
+  .ai-dots i:nth-child(2){animation-delay:.2s}
+  .ai-dots i:nth-child(3){animation-delay:.4s}
+  @keyframes aiBlink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+  .ai-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 10px}
+  .ai-chip{background:transparent;border:1px solid #4f7cff;color:inherit;border-radius:16px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:inherit;transition:background .15s}
+  .ai-chip:hover{background:rgba(79,124,255,.18)}
+
   .ai-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line,#2a3b5c)}
-  .ai-row input{flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--line,#2a3b5c);background:transparent;color:inherit;font-size:16px}
-  .ai-row button{padding:0 14px;border-radius:10px;border:0;background:var(--accent,#2b8cff);color:#fff;cursor:pointer;font-size:15px}
-  .ai-row button:disabled{opacity:.5}
+  .ai-row input{flex:1;min-width:0;padding:11px 15px;border-radius:22px;border:1px solid var(--line,#2a3b5c);background:transparent;color:inherit;font-size:16px;font-family:inherit;outline:none}
+  .ai-row input:focus{border-color:#4f7cff}
+  .ai-send{width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;cursor:pointer;font-size:16px;flex-shrink:0}
+  .ai-send:disabled{opacity:.5}
   `;
   document.head.appendChild(style);
 
@@ -25,35 +56,124 @@
   var box = document.createElement('div');
   box.className = 'ai-box';
   box.innerHTML =
-    '<div class="ai-head">🤖 AI সহকারী</div>' +
+    '<div class="ai-head"><span class="ai-av">🤖</span>' +
+    '<div class="ai-ttl"><b>AI সহকারী</b><small>অনলাইন • পড়াশোনার সাহায্যকারী</small></div>' +
+    '<button class="ai-hb ai-clr" aria-label="চ্যাট মুছুন" title="নতুন চ্যাট">🗑</button>' +
+    '<button class="ai-hb ai-x" aria-label="বন্ধ করুন">✕</button></div>' +
     '<div class="ai-msgs"></div>' +
-    '<div class="ai-row"><input maxlength="500" placeholder="প্রশ্ন লিখুন..."><button>পাঠান</button></div>';
+    '<div class="ai-chips"></div>' +
+    '<div class="ai-row"><input maxlength="500" placeholder="প্রশ্ন লিখুন..."><button class="ai-send" aria-label="পাঠান">➤</button></div>';
 
   document.body.appendChild(fab);
   document.body.appendChild(box);
 
   var msgs = box.querySelector('.ai-msgs');
+  var chips = box.querySelector('.ai-chips');
   var inp = box.querySelector('input');
-  var sendBtn = box.querySelector('button');
+  var sendBtn = box.querySelector('.ai-send');
   var busy = false;
   var greeted = false;
+
+  var QUICK = [
+    'পরীক্ষার প্রস্তুতি কীভাবে নেব?',
+    'পড়ার রুটিন বানিয়ে দাও',
+    'সাইট কীভাবে ব্যবহার করব?'
+  ];
+
+  QUICK.forEach(function (q) {
+    var c = document.createElement('button');
+    c.className = 'ai-chip';
+    c.textContent = q;
+    c.onclick = function () { inp.value = q; send(); };
+    chips.appendChild(c);
+  });
+
+  function nowTime() {
+    try { return new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return ''; }
+  }
+
+  // **বোল্ড** আর - তালিকা সাজানো (নিরাপদভাবে, HTML ছাড়া)
+  function fmt(el, text) {
+    el.textContent = '';
+    String(text).split('\n').forEach(function (line) {
+      var row = document.createElement('div');
+      var m = line.match(/^\s*[-*•]\s+(.*)/);
+      if (m) { row.className = 'ai-li'; line = m[1]; }
+      else if (!line.trim()) row.className = 'ai-gap';
+      line.split(/(\*\*[^*]+\*\*)/).forEach(function (part) {
+        if (/^\*\*[^*]+\*\*$/.test(part)) {
+          var b = document.createElement('strong');
+          b.textContent = part.slice(2, -2);
+          row.appendChild(b);
+        } else if (part) {
+          row.appendChild(document.createTextNode(part));
+        }
+      });
+      el.appendChild(row);
+    });
+  }
 
   function add(text, who) {
     var d = document.createElement('div');
     d.className = 'ai-m ' + (who === 'me' ? 'ai-me' : 'ai-bot');
-    d.textContent = text;
+    var t = document.createElement('div');
+    t.className = 'ai-t';
+    var meta = document.createElement('div');
+    meta.className = 'ai-meta';
+    d.appendChild(t);
+    d.appendChild(meta);
+    if (text) fmt(t, text);
     msgs.appendChild(d);
     msgs.scrollTop = msgs.scrollHeight;
-    return d;
+    return { box: d, t: t, meta: meta };
   }
 
-  fab.onclick = function () {
-    box.classList.toggle('show');
-    if (box.classList.contains('show') && !greeted) {
-      greeted = true;
-      add('আসসালামু আলাইকুম! পড়াশোনা বা সাইট নিয়ে কিছু জানতে চাইলে লিখুন।', 'bot');
+  function finish(m, text, canCopy) {
+    fmt(m.t, text);
+    m.meta.textContent = '';
+    var time = document.createElement('span');
+    time.textContent = nowTime();
+    if (canCopy) {
+      var cp = document.createElement('button');
+      cp.className = 'ai-cp';
+      cp.textContent = '📋 কপি';
+      cp.onclick = function () {
+        try {
+          navigator.clipboard.writeText(text);
+          cp.textContent = '✓ কপি হয়েছে';
+          setTimeout(function () { cp.textContent = '📋 কপি'; }, 1500);
+        } catch (e) {}
+      };
+      m.meta.appendChild(cp);
     }
+    m.meta.appendChild(time);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function greet() {
+    var g = add('', 'bot');
+    finish(g, 'আসসালামু আলাইকুম! 👋\nপড়াশোনা বা সাইট নিয়ে কিছু জানতে চাইলে লিখুন।', false);
+  }
+
+  function toggle(show) {
+    var on = show === undefined ? !box.classList.contains('show') : show;
+    box.classList.toggle('show', on);
+    if (on && !greeted) { greeted = true; greet(); }
+    if (on) setTimeout(function () { try { inp.focus(); } catch (e) {} }, 250);
+  }
+
+  fab.onclick = function () { toggle(); };
+  box.querySelector('.ai-x').onclick = function () { toggle(false); };
+  box.querySelector('.ai-clr').onclick = function () {
+    if (busy) return;
+    msgs.textContent = '';
+    chips.style.display = 'flex';
+    greet();
   };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') toggle(false);
+  });
 
   async function send() {
     var text = inp.value.trim();
@@ -61,19 +181,21 @@
     busy = true;
     sendBtn.disabled = true;
     inp.value = '';
-    add(text, 'me');
-    var wait = add('লিখছি...', 'bot');
+    chips.style.display = 'none';
+    var mine = add('', 'me');
+    finish(mine, text, false);
+    var wait = add('', 'bot');
+    wait.t.innerHTML = '<span class="ai-dots"><i></i><i></i><i></i></span>';
     try {
       var res = await sb.functions.invoke('ai-reply', { body: { message: text } });
       if (res.error) throw res.error;
-      wait.textContent = (res.data && res.data.reply) || 'উত্তর পাওয়া যায়নি';
+      finish(wait, (res.data && res.data.reply) || 'উত্তর পাওয়া যায়নি', true);
     } catch (e) {
       console.error(e);
-      wait.textContent = 'এখন উত্তর দিতে পারছি না, একটু পরে চেষ্টা করুন';
+      finish(wait, 'এখন উত্তর দিতে পারছি না, একটু পরে চেষ্টা করুন', false);
     }
     busy = false;
     sendBtn.disabled = false;
-    msgs.scrollTop = msgs.scrollHeight;
   }
 
   sendBtn.onclick = send;
