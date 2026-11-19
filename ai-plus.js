@@ -7,8 +7,10 @@
   .ai-fab::after{content:"";position:absolute;right:1px;top:1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
   @keyframes aiPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.7);opacity:0}}
 
-  .ai-box{position:fixed;left:14px;bottom:calc(136px + env(safe-area-inset-bottom,0px));z-index:90;width:min(370px,calc(100vw - 28px));height:min(460px,calc(100vh - 200px));display:flex;flex-direction:column;background:var(--card,#12203a);color:var(--text,#fff);border:1px solid var(--line,#2a3b5c);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.55);overflow:hidden;opacity:0;visibility:hidden;transform:translateY(12px) scale(.97);transform-origin:bottom left;transition:opacity .22s,transform .22s,visibility .22s}
-  .ai-box.show{opacity:1;visibility:visible;transform:none}
+    .ai-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:95;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+  .ai-ov.show{opacity:1;visibility:visible}
+  .ai-box{position:fixed;left:50%;top:50%;z-index:96;width:min(720px,calc(100vw - 20px));height:min(88vh,760px);max-height:calc(100vh - 20px);display:flex;flex-direction:column;background:var(--card,#12203a);color:var(--text,#fff);border:1px solid var(--line,#2a3b5c);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.55);overflow:hidden;opacity:0;visibility:hidden;transform:translate(-50%,-47%) scale(.97);transition:opacity .22s,transform .22s,visibility .22s}
+  .ai-box.show{opacity:1;visibility:visible;transform:translate(-50%,-50%)
 
   .ai-head{display:flex;align-items:center;gap:10px;padding:13px 14px;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff}
   .ai-av{position:relative;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px}
@@ -66,6 +68,10 @@
 
   document.body.appendChild(fab);
   document.body.appendChild(box);
+  var ov = document.createElement('div');
+  ov.className = 'ai-ov';
+  document.body.appendChild(ov);
+  ov.onclick = function () { toggle(false); };  
 
   var msgs = box.querySelector('.ai-msgs');
   var chips = box.querySelector('.ai-chips');
@@ -159,6 +165,7 @@
   function toggle(show) {
     var on = show === undefined ? !box.classList.contains('show') : show;
     box.classList.toggle('show', on);
+        ov.classList.toggle('show', on);
     if (on && !greeted) { greeted = true; greet(); }
     if (on) setTimeout(function () { try { inp.focus(); } catch (e) {} }, 250);
   }
@@ -206,7 +213,7 @@
       var r = await sb.auth.getSession();
       var ok = !!(r.data && r.data.session);
       fab.style.display = ok ? 'block' : 'none';
-      if (!ok) box.classList.remove('show');
+       if (!ok) { box.classList.remove('show'); ov.classList.remove('show'); }
     } catch (e) {}
   }
   refresh();
