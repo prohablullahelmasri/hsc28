@@ -7,10 +7,10 @@
   .ai-fab::after{content:"";position:absolute;right:1px;top:1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
   @keyframes aiPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.7);opacity:0}}
 
-    .ai-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:95;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+  .ai-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:95;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
   .ai-ov.show{opacity:1;visibility:visible}
-  .ai-box{position:fixed;left:50%;top:50%;z-index:96;width:min(720px,calc(100vw - 20px));height:min(88vh,760px);max-height:calc(100vh - 20px);display:flex;flex-direction:column;background:var(--card,#12203a);color:var(--text,#fff);border:1px solid var(--line,#2a3b5c);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.55);overflow:hidden;opacity:0;visibility:hidden;transform:translate(-50%,-47%) scale(.97);transition:opacity .22s,transform .22s,visibility .22s}
-  .ai-box.show{opacity:1;visibility:visible;transform:translate(-50%,-50%)
+  .ai-box{position:fixed;left:50%;top:50%;z-index:96;width:min(720px,calc(100vw - 20px));height:min(88vh,760px);height:min(88dvh,760px);max-height:calc(100vh - 20px);display:flex;flex-direction:column;background:var(--card,#12203a);color:var(--text,#fff);border:1px solid var(--line,#2a3b5c);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.55);overflow:hidden;opacity:0;visibility:hidden;transform:translate(-50%,-47%) scale(.97);transition:opacity .22s,transform .22s,visibility .22s}
+  .ai-box.show{opacity:1;visibility:visible;transform:translate(-50%,-50%)}
 
   .ai-head{display:flex;align-items:center;gap:10px;padding:13px 14px;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff}
   .ai-av{position:relative;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px}
@@ -30,6 +30,7 @@
   .ai-t .ai-li{padding-left:16px;position:relative}
   .ai-t .ai-li::before{content:"•";position:absolute;left:3px}
   .ai-t .ai-gap{height:6px}
+  .ai-typing > div:last-child::after{content:"▌";margin-left:2px;animation:aiBlink 1s infinite}
   .ai-meta{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:3px;font-size:11px;opacity:.65}
   .ai-cp{background:transparent;border:0;color:inherit;cursor:pointer;font-size:11px;padding:0;font-family:inherit}
   .ai-dots i{display:inline-block;width:7px;height:7px;margin:4px 2px;border-radius:50%;background:currentColor;opacity:.4;animation:aiBlink 1.2s infinite}
@@ -59,19 +60,19 @@
   box.className = 'ai-box';
   box.innerHTML =
     '<div class="ai-head"><span class="ai-av">🤖</span>' +
-    '<div class="ai-ttl"><b>AI সহকারী</b><small>অনলাইন • পড়াশোনার সাহায্যকারী</small></div>' +
+    '<div class="ai-ttl"><b>AI সহকারী</b><small>অনলাইন • যেকোনো প্রশ্ন করুন</small></div>' +
     '<button class="ai-hb ai-clr" aria-label="চ্যাট মুছুন" title="নতুন চ্যাট">🗑</button>' +
     '<button class="ai-hb ai-x" aria-label="বন্ধ করুন">✕</button></div>' +
     '<div class="ai-msgs"></div>' +
     '<div class="ai-chips"></div>' +
     '<div class="ai-row"><input maxlength="1500" placeholder="প্রশ্ন লিখুন..."><button class="ai-send" aria-label="পাঠান">➤</button></div>';
 
-  document.body.appendChild(fab);
-  document.body.appendChild(box);
   var ov = document.createElement('div');
   ov.className = 'ai-ov';
+
+  document.body.appendChild(fab);
   document.body.appendChild(ov);
-  ov.onclick = function () { toggle(false); };  
+  document.body.appendChild(box);
 
   var msgs = box.querySelector('.ai-msgs');
   var chips = box.querySelector('.ai-chips');
@@ -79,6 +80,7 @@
   var sendBtn = box.querySelector('.ai-send');
   var busy = false;
   var greeted = false;
+  var hist = [];
 
   var QUICK = [
     'পরীক্ষার প্রস্তুতি কীভাবে নেব?',
@@ -136,6 +138,7 @@
   }
 
   function finish(m, text, canCopy) {
+    m.t.classList.remove('ai-typing');
     fmt(m.t, text);
     m.meta.textContent = '';
     var time = document.createElement('span');
@@ -159,22 +162,24 @@
 
   function greet() {
     var g = add('', 'bot');
-    finish(g, 'আসসালামু আলাইকুম! 👋\nপড়াশোনা বা সাইট নিয়ে কিছু জানতে চাইলে লিখুন।', false);
+    finish(g, 'আসসালামু আলাইকুম! 👋\nযেকোনো বিষয়ে প্রশ্ন করতে পারেন, আমি উত্তর দেওয়ার চেষ্টা করব।', false);
   }
 
   function toggle(show) {
     var on = show === undefined ? !box.classList.contains('show') : show;
     box.classList.toggle('show', on);
-        ov.classList.toggle('show', on);
+    ov.classList.toggle('show', on);
     if (on && !greeted) { greeted = true; greet(); }
     if (on) setTimeout(function () { try { inp.focus(); } catch (e) {} }, 250);
   }
 
   fab.onclick = function () { toggle(); };
+  ov.onclick = function () { toggle(false); };
   box.querySelector('.ai-x').onclick = function () { toggle(false); };
   box.querySelector('.ai-clr').onclick = function () {
     if (busy) return;
     msgs.textContent = '';
+    hist = [];
     chips.style.display = 'flex';
     greet();
   };
@@ -193,13 +198,75 @@
     finish(mine, text, false);
     var wait = add('', 'bot');
     wait.t.innerHTML = '<span class="ai-dots"><i></i><i></i><i></i></span>';
+
+    var target = '';
+    var shown = 0;
+    var streamDone = false;
+    var timer = null;
+    var resolveTyping;
+    var typing = new Promise(function (r) { resolveTyping = r; });
+
+    // একটা একটা করে অক্ষর ফোটানো
+    function tick() {
+      if (shown < target.length) {
+        var step = Math.max(1, Math.ceil((target.length - shown) / 25));
+        shown = Math.min(target.length, shown + step);
+        var c = target.charCodeAt(shown - 1);
+        if (c >= 0xD800 && c <= 0xDBFF && shown < target.length) shown++;
+        wait.t.classList.add('ai-typing');
+        fmt(wait.t, target.slice(0, shown));
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+      if (streamDone && shown >= target.length) {
+        clearInterval(timer);
+        resolveTyping();
+      }
+    }
+    timer = setInterval(tick, 25);
+
     try {
-      var res = await sb.functions.invoke('ai-reply', { body: { message: text } });
-      if (res.error) throw res.error;
-      finish(wait, (res.data && res.data.reply) || 'উত্তর পাওয়া যায়নি', true);
+      var s = await sb.auth.getSession();
+      var tok = s.data && s.data.session && s.data.session.access_token;
+      if (!tok) throw new Error('no session');
+      var resp = await fetch(sb.supabaseUrl + '/functions/v1/ai-reply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + tok,
+          'apikey': sb.supabaseKey
+        },
+        body: JSON.stringify({ message: text, history: hist.slice(-8) })
+      });
+      if (!resp.ok || !resp.body) throw new Error('http ' + resp.status);
+      var reader = resp.body.getReader();
+      var dec = new TextDecoder();
+      var buf = '';
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buf += dec.decode(chunk.value, { stream: true });
+        var lines = buf.split('\n');
+        buf = lines.pop();
+        for (var i = 0; i < lines.length; i++) {
+          var ln = lines[i].trim();
+          if (ln.indexOf('data:') !== 0) continue;
+          var j;
+          try { j = JSON.parse(ln.slice(5)); } catch (e) { continue; }
+          if (j.err) throw new Error('stream');
+          if (j.t) target += j.t;
+        }
+      }
+      streamDone = true;
+      if (!target) throw new Error('empty');
+      await typing;
+      finish(wait, target, true);
+      hist.push({ r: 'user', t: text }, { r: 'model', t: target });
     } catch (e) {
       console.error(e);
-      finish(wait, 'এখন উত্তর দিতে পারছি না, একটু পরে চেষ্টা করুন', false);
+      streamDone = true;
+      clearInterval(timer);
+      if (target) finish(wait, target, true);
+      else finish(wait, 'এখন উত্তর দিতে পারছি না, একটু পরে চেষ্টা করুন', false);
     }
     busy = false;
     sendBtn.disabled = false;
@@ -213,7 +280,7 @@
       var r = await sb.auth.getSession();
       var ok = !!(r.data && r.data.session);
       fab.style.display = ok ? 'block' : 'none';
-       if (!ok) { box.classList.remove('show'); ov.classList.remove('show'); }
+      if (!ok) { box.classList.remove('show'); ov.classList.remove('show'); }
     } catch (e) {}
   }
   refresh();
