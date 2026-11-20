@@ -26,6 +26,8 @@
 
 <div class="form-box">
   <p style="font-size:14px;color:var(--muted);margin-bottom:12px">এটি <b>Hablullah Educational Hub</b>-এর নিজস্ব লগইন। এই সাইটের জন্য আলাদা একটা পাসওয়ার্ড দিন। Gmail, Facebook বা অন্য কোনো সাইটের পাসওয়ার্ড এখানে দেবেন না।</p>
+  <div id="nextNote" class="msg err" style="display:none;margin-bottom:12px">এই ফিচার ব্যবহার করতে আগে লগইন করুন। লগইনের পর আপনি আগের পেজেই ফিরে যাবেন।</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:12px">✅ একবার লগইন করলেই AI সহকারী, চীনা বাদাম চ্যাটসহ সব ফিচার চালু হয়ে যাবে।</p>
   <div class="tabs" style="margin-top:0">
     <button id="tabLogin" class="active">লগইন</button>
     <button id="tabReg">রেজিস্টার</button>
@@ -55,6 +57,9 @@
 const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 const home = location.href.replace(/login\.html.*$/, 'index.html');
+const _nx = new URLSearchParams(location.search).get('next') || '';
+const nextUrl = /^[A-Za-z0-9_\-]+\.html$/.test(_nx) && _nx !== 'login.html' ? _nx : 'index.html';
+if (_nx) $('nextNote').style.display = 'block';
 const bn = n => Number(n).toLocaleString('bn-BD');
 let mode = 'login';
 let pendingEmail = '';
@@ -143,24 +148,28 @@ $('go').onclick = async () => {
   const email = $('email').value.trim(), pass = $('pass').value;
   if (!email || !pass) return say('ইমেইল ও পাসওয়ার্ড দিন।');
   if (mode === 'reg' && pass.length < 6) return say('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।');
+  const goText = $('go').textContent;
   $('go').disabled = true;
+  $('go').textContent = 'অপেক্ষা করুন...';
   if (mode === 'login') {
     const { error } = await sb.auth.signInWithPassword({ email, password: pass });
     $('go').disabled = false;
+    $('go').textContent = goText;
     if (error) {
       say(nice(error.message));
       if (/Email not confirmed/i.test(error.message)) showResend(email, false);
       return;
     }
-    location.href = 'index.html';
+    location.href = nextUrl;
   } else {
     const { data, error } = await sb.auth.signUp({
       email, password: pass,
       options: { data: { full_name: $('name').value.trim() }, emailRedirectTo: home }
     });
     $('go').disabled = false;
+    $('go').textContent = goText;
     if (error) return say(nice(error.message));
-    if (data.session) { location.href = 'index.html'; return; }
+    if (data.session) { location.href = nextUrl; return; }
     if (data.user && data.user.identities && data.user.identities.length === 0) {
       return say('এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। লগইন করুন।');
     }
@@ -190,7 +199,7 @@ $('forgot').onclick = async e => {
 try { pendingEmail = sessionStorage.getItem('pendingEmail') || ''; } catch (e) {}
 if (resumeCd('resend', resendTick, resendDone)) $('resendBox').style.display = 'block';
 resumeCd('forgot', forgotTick, forgotDone);
-sb.auth.getSession().then(({ data }) => { if (data.session) location.href = 'index.html'; });
+sb.auth.getSession().then(({ data }) => { if (data.session) location.href = nextUrl; });
 </script>
 </body>
 </html>
