@@ -47,7 +47,7 @@
 
   const css = document.createElement('style');
   css.textContent = `
-  #chFab{position:fixed;left:16px;bottom:18px;width:60px;height:60px;border-radius:50%;border:2px solid #e0a85f;cursor:pointer;z-index:70;background:#fff3df;box-shadow:0 8px 22px rgba(224,168,95,.55);transition:transform .25s;display:flex;align-items:center;justify-content:center;padding:0}
+    #chFab{position:fixed;left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:50%;border:2px solid #e0a85f;cursor:pointer;z-index:70;background:#fff3df;box-shadow:0 8px 22px rgba(224,168,95,.55);transition:transform .25s;display:flex;align-items:center;justify-content:center;padding:0}
   #chFab:hover{transform:scale(1.1)}
   #chBadge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:#e74c3c;color:#fff;font-size:12px;line-height:20px;padding:0 5px;display:none}
   #chOv{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:110;display:none;align-items:center;justify-content:center}
@@ -120,7 +120,7 @@
 
   const fab = document.createElement('button');
   fab.id = 'chFab';
-  fab.innerHTML = sz(40) + '<span id="chBadge"></span>';
+  fab.innerHTML = sz(42) + '<span id="chBadge"></span>';
   fab.setAttribute('aria-label', 'চিনা বাদাম');
   const ov = document.createElement('div');
   ov.id = 'chOv';
