@@ -54,7 +54,6 @@
   fab.className = 'ai-fab';
   fab.textContent = '🤖';
   fab.setAttribute('aria-label', 'AI সহকারী');
-  fab.style.display = 'none';
 
   var box = document.createElement('div');
   box.className = 'ai-box';
@@ -173,7 +172,14 @@
     if (on) setTimeout(function () { try { inp.focus(); } catch (e) {} }, 250);
   }
 
-  fab.onclick = function () { toggle(); };
+  fab.onclick = async function () {
+    var r = await sb.auth.getSession();
+    if (!(r.data && r.data.session)) {
+      location.href = 'login.html?next=' + (location.pathname.split('/').pop() || 'index.html');
+      return;
+    }
+    toggle();
+  };
   ov.onclick = function () { toggle(false); };
   box.querySelector('.ai-x').onclick = function () { toggle(false); };
   box.querySelector('.ai-clr').onclick = function () {
@@ -279,7 +285,6 @@
     try {
       var r = await sb.auth.getSession();
       var ok = !!(r.data && r.data.session);
-      fab.style.display = ok ? 'block' : 'none';
       if (!ok) { box.classList.remove('show'); ov.classList.remove('show'); }
     } catch (e) {}
   }
