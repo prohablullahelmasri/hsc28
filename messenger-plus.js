@@ -887,7 +887,12 @@
     if (f) { e.preventDefault(); setPending(f); }
   });
 
-  fab.onclick = () => {
+   fab.onclick = async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      location.href = 'login.html?next=' + (location.pathname.split('/').pop() || 'index.html');
+      return;
+    }
     ov.classList.add('open');
     if (!seenSplash) { seenSplash = true; splash(); } else entry();
   };
