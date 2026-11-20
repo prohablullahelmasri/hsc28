@@ -1,7 +1,7 @@
 (function () {
   var style = document.createElement('style');
   style.textContent = `
-  .ai-fab{position:fixed;left:19px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:90;width:46px;height:46px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.5);transition:transform .2s}
+    .ai-fab{position:fixed;left:92px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:90;width:64px;height:64px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.5);transition:transform .2s}
   .ai-fab:hover{transform:scale(1.08)}
   .ai-fab::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #4f7cff;animation:aiPulse 2.4s ease-out infinite;pointer-events:none}
   .ai-fab::after{content:"";position:absolute;right:1px;top:1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
@@ -53,13 +53,13 @@
   var fab = document.createElement('button');
   fab.className = 'ai-fab';
   fab.textContent = '🤖';
-  fab.setAttribute('aria-label', 'AI সহকারী');
+  fab.setAttribute('aria-label', 'Hablullah Ai');
 
   var box = document.createElement('div');
   box.className = 'ai-box';
   box.innerHTML =
     '<div class="ai-head"><span class="ai-av">🤖</span>' +
-    '<div class="ai-ttl"><b>AI সহকারী</b><small>অনলাইন • যেকোনো প্রশ্ন করুন</small></div>' +
+    '<div class="ai-ttl"><b>Hablullah Ai</b><small>অনলাইন • যেকোনো প্রশ্ন করুন</small></div>' +
     '<button class="ai-hb ai-clr" aria-label="চ্যাট মুছুন" title="নতুন চ্যাট">🗑</button>' +
     '<button class="ai-hb ai-x" aria-label="বন্ধ করুন">✕</button></div>' +
     '<div class="ai-msgs"></div>' +
