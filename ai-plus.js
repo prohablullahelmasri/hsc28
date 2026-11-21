@@ -47,6 +47,8 @@
   .ai-row input:focus{border-color:#4f7cff}
   .ai-send{width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;cursor:pointer;font-size:16px;flex-shrink:0}
   .ai-send:disabled{opacity:.5}
+    .ai-t .ai-h{font-weight:700;font-size:16px;margin:12px 0 4px}
+  .ai-t .ai-nu{padding-left:4px}
   `;
   document.head.appendChild(style);
 
@@ -99,28 +101,34 @@
     try { return new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }); }
     catch (e) { return ''; }
   }
+  function inline(row, line) {
+    line.split(/(\*\*[^*]+\*\*)/).forEach(function (part) {
+      if (/^\*\*[^*]+\*\*$/.test(part)) {
+        var b = document.createElement('strong');
+        b.textContent = part.slice(2, -2);
+        row.appendChild(b);
+      } else if (part) {
+        row.appendChild(document.createTextNode(part));
+      }
+    });
+  }
 
-  // **বোল্ড** আর - তালিকা সাজানো (নিরাপদভাবে, HTML ছাড়া)
+  // শিরোনাম (##), তালিকা (-), নম্বর (১.), **বোল্ড** সাজানো
   function fmt(el, text) {
     el.textContent = '';
     String(text).split('\n').forEach(function (line) {
       var row = document.createElement('div');
-      var m = line.match(/^\s*[-*•]\s+(.*)/);
-      if (m) { row.className = 'ai-li'; line = m[1]; }
+      var h = line.match(/^\s*#{1,4}\s+(.*)/);
+      var li = line.match(/^\s*[-*•]\s+(.*)/);
+      var nu = line.match(/^\s*([0-9০-৯]+)[.)]\s+(.*)/);
+      if (h) { row.className = 'ai-h'; line = h[1]; }
+      else if (li) { row.className = 'ai-li'; line = li[1]; }
+      else if (nu) { row.className = 'ai-nu'; line = nu[1] + '. ' + nu[2]; }
       else if (!line.trim()) row.className = 'ai-gap';
-      line.split(/(\*\*[^*]+\*\*)/).forEach(function (part) {
-        if (/^\*\*[^*]+\*\*$/.test(part)) {
-          var b = document.createElement('strong');
-          b.textContent = part.slice(2, -2);
-          row.appendChild(b);
-        } else if (part) {
-          row.appendChild(document.createTextNode(part));
-        }
-      });
+      inline(row, line);
       el.appendChild(row);
     });
   }
-
   function add(text, who) {
     var d = document.createElement('div');
     d.className = 'ai-m ' + (who === 'me' ? 'ai-me' : 'ai-bot');
