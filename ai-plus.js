@@ -1,10 +1,10 @@
 (function () {
   var style = document.createElement('style');
   style.textContent = `
-    .ai-fab{position:fixed;left:92px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:90;width:64px;height:64px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.5);transition:transform .2s}
+  .ai-fab{position:fixed;left:92px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:90;width:64px;height:64px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f46e5,#2563eb);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.5);transition:transform .2s}
   .ai-fab:hover{transform:scale(1.08)}
   .ai-fab::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #4f7cff;animation:aiPulse 2.4s ease-out infinite;pointer-events:none}
-  .ai-fab::after{content:"";position:absolute;right:1px;top:1px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff}
+  .ai-fab::after{content:"";position:absolute;right:1px;top:1px;width:13px;height:13px;border-radius:50%;background:#22c55e;border:2px solid #fff}
   @keyframes aiPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.7);opacity:0}}
 
   .ai-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:95;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
@@ -53,13 +53,13 @@
   var fab = document.createElement('button');
   fab.className = 'ai-fab';
   fab.textContent = '🤖';
-  fab.setAttribute('aria-label', 'Hablullah Ai');
+  fab.setAttribute('aria-label', 'Hablullah AI');
 
   var box = document.createElement('div');
   box.className = 'ai-box';
   box.innerHTML =
     '<div class="ai-head"><span class="ai-av">🤖</span>' +
-    '<div class="ai-ttl"><b>Hablullah Ai</b><small>অনলাইন • যেকোনো প্রশ্ন করুন</small></div>' +
+    '<div class="ai-ttl"><b>Hablullah AI</b><small>অনলাইন • যেকোনো প্রশ্ন করুন</small></div>' +
     '<button class="ai-hb ai-clr" aria-label="চ্যাট মুছুন" title="নতুন চ্যাট">🗑</button>' +
     '<button class="ai-hb ai-x" aria-label="বন্ধ করুন">✕</button></div>' +
     '<div class="ai-msgs"></div>' +
@@ -161,7 +161,7 @@
 
   function greet() {
     var g = add('', 'bot');
-    finish(g, 'আসসালামু আলাইকুম! 👋\nযেকোনো বিষয়ে প্রশ্ন করতে পারেন, আমি উত্তর দেওয়ার চেষ্টা করব।', false);
+    finish(g, 'আসসালামু আলাইকুম! 👋 আমি Hablullah AI।\nযেকোনো বিষয়ে প্রশ্ন করতে পারেন, আমি উত্তর দেওয়ার চেষ্টা করব।', false);
   }
 
   function toggle(show) {
@@ -205,30 +205,8 @@
     var wait = add('', 'bot');
     wait.t.innerHTML = '<span class="ai-dots"><i></i><i></i><i></i></span>';
 
-    var target = '';
-    var shown = 0;
-    var streamDone = false;
-    var timer = null;
-    var resolveTyping;
-    var typing = new Promise(function (r) { resolveTyping = r; });
-
-    // একটা একটা করে অক্ষর ফোটানো
-    function tick() {
-      if (shown < target.length) {
-        var step = Math.max(1, Math.ceil((target.length - shown) / 25));
-        shown = Math.min(target.length, shown + step);
-        var c = target.charCodeAt(shown - 1);
-        if (c >= 0xD800 && c <= 0xDBFF && shown < target.length) shown++;
-        wait.t.classList.add('ai-typing');
-        fmt(wait.t, target.slice(0, shown));
-        msgs.scrollTop = msgs.scrollHeight;
-      }
-      if (streamDone && shown >= target.length) {
-        clearInterval(timer);
-        resolveTyping();
-      }
-    }
-    timer = setInterval(tick, 25);
+    var full = '';
+    var first = true;
 
     try {
       var s = await sb.auth.getSession();
@@ -259,19 +237,20 @@
           var j;
           try { j = JSON.parse(ln.slice(5)); } catch (e) { continue; }
           if (j.err) throw new Error('stream');
-          if (j.t) target += j.t;
+          if (j.t) {
+            full += j.t;
+            if (first) { first = false; wait.t.classList.add('ai-typing'); }
+            fmt(wait.t, full);
+            msgs.scrollTop = msgs.scrollHeight;
+          }
         }
       }
-      streamDone = true;
-      if (!target) throw new Error('empty');
-      await typing;
-      finish(wait, target, true);
-      hist.push({ r: 'user', t: text }, { r: 'model', t: target });
+      if (!full) throw new Error('empty');
+      finish(wait, full, true);
+      hist.push({ r: 'user', t: text }, { r: 'model', t: full });
     } catch (e) {
       console.error(e);
-      streamDone = true;
-      clearInterval(timer);
-      if (target) finish(wait, target, true);
+      if (full) finish(wait, full, true);
       else finish(wait, 'এখন উত্তর দিতে পারছি না, একটু পরে চেষ্টা করুন', false);
     }
     busy = false;
